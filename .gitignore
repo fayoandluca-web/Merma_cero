@@ -1,0 +1,16 @@
+# Entorno virtual de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Credenciales y Configuración de Entorno
+.env
+
+# Bases de datos y archivos de datos locales
+*.db
+*.json
+!requirements.txt

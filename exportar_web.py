@@ -1,0 +1,634 @@
+# -*- coding: utf-8 -*-
+"""Script generador del Frontend interactivo index.html de Merma Cero.
+
+Genera una página estática premium autocontenida con lógica en JavaScript para 
+realizar simulaciones en tiempo real de modelos de Arrhenius, Kelly Sizer y Monte Carlo 48h.
+"""
+import os
+
+HTML_CONTENT = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merma Cero — Oráculo Estocástico de Resiliencia Climática</title>
+    <meta name="description" content="Tesis tecnológica y simulador de resiliencia alimentaria para economía de subsistencia.">
+    <style>
+        /* Modern CSS Reset & Premium Design System */
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.15);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-blur: blur(12px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+        }
+
+        header {
+            width: 100%;
+            max-width: 1200px;
+            padding: 2.5rem 1.5rem 1rem 1.5rem;
+            text-align: center;
+        }
+
+        .logo-glow {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            background: linear-gradient(135deg, var(--primary) 30%, var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-bottom: 2rem;
+        }
+
+        main {
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 1.5rem 3rem 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glassmorphism Card Style */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            padding: 2rem;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(56, 189, 248, 0.25);
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        select, input[type="range"], input[type="number"] {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--primary);
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .range-value {
+            font-weight: 700;
+            min-width: 3.5rem;
+            text-align: right;
+            color: var(--primary);
+        }
+
+        /* Results Display */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .metric-unit {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .alert-box {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-box.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .alert-box.danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        /* SVG/Canvas Chart Container */
+        .chart-container {
+            width: 100%;
+            height: 180px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-top: 1rem;
+            position: relative;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Documentation & Thesis section */
+        .doc-section {
+            grid-column: 1 / -1;
+            margin-top: 1rem;
+        }
+
+        .accordion {
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background: var(--card-bg);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion-content {
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.2);
+            border-top: 1px solid var(--border-color);
+            display: none;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        .accordion-content h3 {
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .accordion-content p {
+            margin-bottom: 1rem;
+        }
+
+        .accordion-content ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        footer {
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 1200px;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-glow">🔮 Merma Cero</div>
+        <div class="subtitle">Oráculo de Resiliencia Climática para la Economía Popular</div>
+    </header>
+
+    <main>
+        <!-- Panel de Control e Inputs -->
+        <section class="card">
+            <h2>⚙️ Parámetros de Operación</h2>
+            
+            <div class="form-group">
+                <label for="category">Categoría del Producto</label>
+                <select id="category" onchange="runSimulation()">
+                    <option value="seafood">🐟 Pescados y Mariscos (Alta sensibilidad Arrhenius)</option>
+                    <option value="flowers">🌸 Flores y Plantas (Humedad favorable)</option>
+                    <option value="fruit_vegetables">🥦 Frutas y Verduras (Cinética moderada)</option>
+                    <option value="dairy">🧀 Lácteos y Quesos (Decaimiento rápido)</option>
+                    <option value="generic">📦 Mercancía General</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="temperature">Temperatura Ambiente (°C)</label>
+                <div class="range-container">
+                    <input type="range" id="temperature" min="0" max="50" step="1" value="25" oninput="updateVal('temp-val', this.value); runSimulation();">
+                    <span id="temp-val" class="range-value">25°C</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="humidity">Humedad Relativa (%)</label>
+                <div class="range-container">
+                    <input type="range" id="humidity" min="0" max="100" step="5" value="60" oninput="updateVal('hum-val', this.value + '%'); runSimulation();">
+                    <span id="hum-val" class="range-value">60%</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="precipitation">Probabilidad de Lluvia (%)</label>
+                <div class="range-container">
+                    <input type="range" id="precipitation" min="0" max="100" step="5" value="10" oninput="updateVal('precip-val', this.value + '%'); runSimulation();">
+                    <span id="precip-val" class="range-value">10%</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="volatility">Volatilidad Climática Proyectada (Choques GARCH)</label>
+                <select id="volatility" onchange="runSimulation()">
+                    <option value="1.0">Estable / Promedio (Varianza Condicional ~ 1.0)</option>
+                    <option value="1.8">Moderada (Varianza Condicional ~ 1.8)</option>
+                    <option value="3.0">Alta / Frente Frío (Varianza Condicional ~ 3.0)</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Resultados e Indicadores -->
+        <section class="card">
+            <h2>📊 Indicadores del Oráculo</h2>
+            
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Vida de Anaquel</div>
+                    <div id="shelf-life" class="metric-value">--</div>
+                    <div class="metric-unit">días est.</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Compra Óptima</div>
+                    <div id="optimal-stock" class="metric-value">--</div>
+                    <div class="metric-unit">% de habitual</div>
+                </div>
+            </div>
+
+            <div id="status-alert" class="alert-box">
+                <!-- Se inyecta la recomendación adaptada -->
+            </div>
+
+            <h2>📉 Distribución de Pérdidas a 48h (Monte Carlo)</h2>
+            <div class="chart-container">
+                <canvas id="mc-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Sección de Tesis y Documentación -->
+        <section class="card doc-section">
+            <h2>📖 Marco Teórico y Matemático</h2>
+            
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <span>🔬 Cinética Arrhenius Modificada</span>
+                    <span>▼</span>
+                </div>
+                <div class="accordion-content">
+                    <p>La velocidad de degradación física diaria $K$ se calcula a través de la ecuación de Arrhenius acoplada con un modulador de humedad libre:</p>
+                    <p><code>K = K₀ · exp(-Ea / (R · T)) · (1 + α · H)</code></p>
+                    <ul>
+                        <li><b>Ea (Energía de Activación):</b> Define la sensibilidad a las variaciones térmicas.</li>
+                        <li><b>α (Coeficiente de Humedad):</b> Positivo para acelerar (por proliferación bacteriana en humedad, ej. mariscos) y negativo para proteger (evitando deshidratación en flores).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <span>🎲 Dimensionamiento Kelly Estocástico</span>
+                    <span>▼</span>
+                </div>
+                <div class="accordion-content">
+                    <p>El optimizador resuelve la cantidad de stock $S^*$ que maximiza la utilidad esperada penalizada por volatilidad de cartera:</p>
+                    <p><code>S* = argmax_Q [ E[Profit(Q)] - λ · Std(Profit(Q)) ]</code></p>
+                    <p>Donde la demanda se reduce drásticamente por lluvia (menos afluencia de transeúntes) o temperaturas excesivas (desconfianza en mariscos frescos o decaimiento floral).</p>
+                </div>
+            </div>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <span>📈 Filtro GARCH(1,1) e Incertidumbre</span>
+                    <span>▼</span>
+                </div>
+                <div class="accordion-content">
+                    <p>La varianza condicional del clima <code>σ_t² = ω + α·ε_{t-1}² + β·σ_{t-1}²</code> obtenida de los residuos térmicos se utiliza para escalar la desviación estándar de la demanda operativa. Mayor volatilidad del clima se traduce en un margen de seguridad más amplio y compras más conservadoras.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        Proyecto Merma Cero — Código Libre de Resistencia Tecnológica bajo Licencia MIT.
+    </footer>
+
+    <script>
+        // Constantes Físicas
+        const R_GAS = 8.314;
+        const INVENTORY_PARAMETERS = {
+            seafood: { Ea: 65000.0, K0: 2.5e10, alpha: 1.2, price: 120.0, cost: 70.0, salvage: 10.0 },
+            flowers: { Ea: 55000.0, K0: 8.0e8, alpha: -0.4, price: 50.0, cost: 20.0, salvage: 5.0 },
+            fruit_vegetables: { Ea: 48000.0, K0: 4.5e7, alpha: 0.8, price: 40.0, cost: 18.0, salvage: 4.0 },
+            dairy: { Ea: 72000.0, K0: 5.0e11, alpha: 0.5, price: 35.0, cost: 22.0, salvage: 2.0 },
+            generic: { Ea: 50000.0, K0: 1.0e8, alpha: 0.5, price: 50.0, cost: 25.0, salvage: 5.0 }
+        };
+
+        // Generador seedable Mulberry32
+        function mulberry32(a) {
+            return function() {
+                let t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            }
+        }
+
+        // Box-Muller
+        function boxMuller(rand) {
+            let u = 0, v = 0;
+            while(u === 0) u = rand();
+            while(v === 0) v = rand();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        function updateVal(id, val) {
+            document.getElementById(id).innerText = val;
+        }
+
+        function toggleAccordion(el) {
+            const content = el.nextElementSibling;
+            const arrow = el.querySelector('span:last-child');
+            if (content.style.display === "block") {
+                content.style.display = "none";
+                arrow.innerText = "▼";
+            } else {
+                content.style.display = "block";
+                arrow.innerText = "▲";
+            }
+        }
+
+        function runSimulation() {
+            const category = document.getElementById('category').value;
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            const humidity = parseFloat(document.getElementById('humidity').value) / 100.0;
+            const precipitation = parseFloat(document.getElementById('precipitation').value) / 100.0;
+            const volatility = parseFloat(document.getElementById('volatility').value);
+
+            const params = INVENTORY_PARAMETERS[category];
+            
+            // 1. Vida de anaquel
+            const tempKelvin = temperature + 273.15;
+            const exponent = -params.Ea / (R_GAS * tempKelvin);
+            const arrhenius = params.K0 * Math.exp(exponent);
+            const humMod = 1.0 + params.alpha * humidity;
+            const K = Math.max(1e-6, arrhenius * humMod);
+            const shelfLife = 1.0 / K;
+            
+            document.getElementById('shelf-life').innerText = shelfLife.toFixed(1);
+
+            // 2. Optimización stock
+            let demandMultiplier = 1.0;
+            if (precipitation > 0.3) {
+              demandMultiplier -= 0.35 * precipitation;
+            }
+            if (category === "seafood" && temperature > 32) demandMultiplier *= 0.60;
+            else if (category === "flowers" && temperature > 30) demandMultiplier *= 0.70;
+            else if (category === "generic" && temperature > 35) demandMultiplier *= 0.80;
+            demandMultiplier = Math.max(0.1, demandMultiplier);
+
+            const meanD = 100.0 * demandMultiplier;
+            const stdD = 30.0 * Math.max(0.5, demandMultiplier) * Math.sqrt(volatility);
+
+            const prng = mulberry32(42);
+            const demands = [];
+            for(let i=0; i<1000; i++) {
+                let d = meanD + boxMuller(prng) * stdD;
+                demands.push(Math.max(0, d));
+            }
+
+            const salvageEff = params.salvage * Math.exp(-K);
+            let bestQ = 0;
+            let maxUtil = -Infinity;
+
+            for(let q=0; q<=200; q++) {
+                let sumProfit = 0;
+                let profits = [];
+                for(let i=0; i<1000; i++) {
+                    const sales = Math.min(q, demands[i]);
+                    const surplus = Math.max(0, q - demands[i]);
+                    const profit = (sales * params.price) + (surplus * salvageEff) - (q * params.cost);
+                    profits.push(profit);
+                    sumProfit += profit;
+                }
+                const meanProfit = sumProfit / 1000;
+                let varSum = 0;
+                for(let i=0; i<1000; i++) {
+                    varSum += Math.pow(profits[i] - meanProfit, 2);
+                }
+                const stdProfit = Math.sqrt(varSum / 1000);
+                const utility = meanProfit - 0.5 * stdProfit;
+
+                if (utility > maxUtil) {
+                    maxUtil = utility;
+                    bestQ = q;
+                }
+            }
+
+            document.getElementById('optimal-stock').innerText = bestQ.toFixed(0);
+
+            // 3. Bitácora / Alerta
+            const alertBox = document.getElementById('status-alert');
+            alertBox.className = "alert-box";
+            if (shelfLife < 1.5) {
+                alertBox.classList.add("danger");
+                alertBox.innerHTML = `⚠️ <b>Riesgo Crítico de Merma:</b> La vida de anaquel estimada es menor a 36 horas. Se recomienda reducir tus compras al ${bestQ.toFixed(0)}% del stock promedio diario y resguardar tu producto con refrigeración o hielo seco inmediatamente.`;
+            } else if (shelfLife < 3.0) {
+                alertBox.classList.add("warning");
+                alertBox.innerHTML = `⚠️ <b>Riesgo Moderado:</b> Temperaturas elevadas aceleran el decaimiento. Reduce ligeramente las compras e incrementa sombra o ventilación sobre tu mercancía.`;
+            } else {
+                alertBox.classList.add("success");
+                alertBox.innerHTML = `✅ <b>Operación Segura:</b> Clima propicio para conservación. Tu stock recomendado es del ${bestQ.toFixed(0)}% para suplir la demanda local proyectada.`;
+            }
+
+            // 4. Monte Carlo Canvas Drawing (Pérdidas acumuladas a 48h)
+            drawChart(category, temperature, humidity, volatility);
+        }
+
+        function drawChart(category, temp, hum, vol) {
+            const canvas = document.getElementById('mc-chart');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width = canvas.offsetWidth;
+            const h = canvas.height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Simular 48h decay factors
+            const prng = mulberry32(42);
+            const decays = [];
+            const volScale = Math.sqrt(vol);
+            const params = INVENTORY_PARAMETERS[category];
+
+            for(let i=0; i<500; i++) {
+                const shock1 = boxMuller(prng);
+                const t1 = Math.min(50, Math.max(0, temp + shock1 * volScale * 0.5));
+                const k1 = params.K0 * Math.exp(-params.Ea / (R_GAS * (t1 + 273.15))) * (1 + params.alpha * hum);
+
+                const shock2 = boxMuller(prng);
+                const t2 = Math.min(50, Math.max(0, t1 + shock2 * volScale * 0.5));
+                const k2 = params.K0 * Math.exp(-params.Ea / (R_GAS * (t2 + 273.15))) * (1 + params.alpha * hum);
+
+                decays.push(1.0 - Math.exp(-(Math.max(1e-6, k1) + Math.max(1e-6, k2))));
+            }
+
+            decays.sort((a,b) => a - b);
+
+            // Agrupar en histograma
+            const binsCount = 20;
+            const bins = new Array(binsCount).fill(0);
+            for(let i=0; i<decays.length; i++) {
+                const binIdx = Math.min(binsCount - 1, Math.floor(decays[i] * binsCount));
+                bins[binIdx]++;
+            }
+
+            const maxBin = Math.max(...bins);
+            const padding = 20;
+            const barW = (w - padding * 2) / binsCount;
+
+            // Dibujar barras del histograma
+            for(let i=0; i<binsCount; i++) {
+                const barH = (bins[i] / maxBin) * (h - padding * 2);
+                const x = padding + i * barW;
+                const y = h - padding - barH;
+
+                ctx.fillStyle = i > 15 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(56, 189, 248, 0.6)';
+                ctx.fillRect(x, y, barW - 2, barH);
+            }
+
+            // Etiquetas del eje X
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('0% merma', padding, h - 5);
+            ctx.fillText('50%', w / 2 - 10, h - 5);
+            ctx.fillText('100% merma', w - padding - 60, h - 5);
+        }
+
+        // Ejecutar simulación inicial al cargar
+        window.onload = function() {
+            runSimulation();
+        }
+    </script>
+</body>
+</html>
+"""
+
+def generate():
+    target_dir = os.path.dirname(os.path.abspath(__file__))
+    target_file = os.path.join(target_dir, "index.html")
+    
+    with open(target_file, "w", encoding="utf-8") as f:
+        f.write(HTML_CONTENT)
+    print(f"[+] Frontend interactivo generado exitosamente en: {target_file}")
+
+if __name__ == "__main__":
+    generate()
