@@ -246,6 +246,7 @@ async def process_telegram_webhook(update: TelegramUpdate, response: Response):
         return {"status": "error", "message": "Error interno del servidor."}
 
 @app.post("/alerts/trigger", status_code=status.HTTP_200_OK)
+@app.get("/alerts/trigger", status_code=status.HTTP_200_OK)
 def trigger_climate_alerts(response: Response):
     """Scan and send proactive weather alerts to all registered merchants when risks are detected."""
     trace_id = secrets.token_hex(8)
