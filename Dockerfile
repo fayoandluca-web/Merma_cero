@@ -18,8 +18,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copiar el código del proyecto
-COPY . .
+# Copiar el código del proyecto dentro de la subcarpeta 'merma_cero' 
+# para mantener la compatibilidad con las importaciones de Python.
+COPY . merma_cero/
+
+# Cambiar al directorio de ejecución del código
+WORKDIR /app/merma_cero
 
 # Exponer el puerto
 EXPOSE 8000
