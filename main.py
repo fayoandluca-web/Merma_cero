@@ -25,7 +25,7 @@ import zoneinfo
 
 # Importaciones de FastAPI
 from fastapi import FastAPI, Request, Response, status, Query
-from fastapi.responses import PlainTextResponse, HTMLResponse
+from fastapi.responses import PlainTextResponse, HTMLResponse, FileResponse
 from pydantic import BaseModel, Field
 
 # Importaciones del Dominio e Infraestructura
@@ -295,6 +295,14 @@ def read_root():
     if _cached_index_html:
         return HTMLResponse(content=_cached_index_html)
     return HTMLResponse(content="<h1>Merma Cero: Oráculo Climático Online</h1>")
+
+@app.get("/market_stall.jpg", response_class=FileResponse)
+def get_market_stall_image():
+    """Sirve la imagen representativa del tianguis/mercado."""
+    img_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "market_stall.jpg")
+    if os.path.exists(img_path):
+        return FileResponse(img_path)
+    return Response(status_code=404)
 
 @app.get("/webhook", response_class=PlainTextResponse)
 def verify_webhook(
