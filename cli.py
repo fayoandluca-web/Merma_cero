@@ -125,9 +125,10 @@ def cmd_servidor(args):
 def cmd_pruebas(args):
     """Ejecuta la suite de pruebas unitarias locales."""
     import unittest
+    import os
     print("[*] Iniciando suite de pruebas unitarias y de integración de Merma Cero...")
-    from merma_cero.test_merma_cero import TestMermaCeroSystem
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestMermaCeroSystem)
+    start_dir = os.path.dirname(os.path.abspath(__file__))
+    suite = unittest.TestLoader().discover(start_dir=start_dir, pattern="test_*.py")
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     sys.exit(0 if result.wasSuccessful() else 1)

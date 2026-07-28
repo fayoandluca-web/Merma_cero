@@ -159,13 +159,73 @@ async def run_daily_scheduler():
             )
             await asyncio.sleep(60)
 
+# Tarea de fondo: Programador de Encuestas Quincenales (cada 15 días)
+async def run_fortnightly_survey_scheduler() -> None:
+    """Bucle asíncrono que ejecuta el envío de la encuesta quincenal cada 15 días."""
+    log_json(
+        severity="INFO",
+        message="Iniciando programador de encuestas quincenales (Intervalo: 15 días)"
+    )
+    
+    interval_seconds = 15 * 24 * 3600
+    
+    while True:
+        try:
+            log_json(
+                severity="INFO",
+                message="Encuesta automática quincenal programada.",
+                context={"sleep_seconds": interval_seconds}
+            )
+            await asyncio.sleep(interval_seconds)
+            
+            trace_id = secrets.token_hex(8)
+            log_json(
+                severity="INFO",
+                message="Disparador automático quincenal iniciado",
+                trace_id=trace_id
+            )
+            
+            sent = oraculo.check_and_send_fortnightly_survey()
+            log_json(
+                severity="INFO",
+                message="Procesamiento quincenal de encuesta de impacto completado",
+                context={"surveys_sent_count": len(sent), "recipients": sent},
+                trace_id=trace_id
+            )
+        except asyncio.CancelledError:
+            log_json(severity="INFO", message="Programador de encuestas quincenales detenido.")
+            break
+        except Exception as e:
+            tb = "".join(traceback.format_exception(None, e, e.__traceback__))
+            log_json(
+                severity="ERROR",
+                message="Excepción en el programador de encuestas quincenales",
+                context={"exception": str(e), "traceback": tb}
+            )
+            await asyncio.sleep(60)
+
 @app.on_event("startup")
 async def startup_event():
     """Ciclo de vida al iniciar FastAPI: Arranca el scheduler y registra el webhook si aplica."""
     # 1. Iniciar la tarea de fondo de alertas
     asyncio.create_task(run_daily_scheduler())
     
-    # 2. Registrar webhook de Telegram automáticamente si se provee una URL pública
+    # 1b. Iniciar la tarea de fondo de encuestas quincenales
+    asyncio.create_task(run_fortnightly_survey_scheduler())
+    
+    # 2. Sembrar la base de datos si está vacía
+    try:
+        from merma_cero.infrastructure.seeder import seed_database
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, lambda: seed_database(repo))
+    except Exception as e:
+        log_json(
+            severity="ERROR",
+            message="Error al intentar sembrar la base de datos en el inicio",
+            context={"error": str(e)}
+        )
+
+    # 3. Registrar webhook de Telegram automáticamente si se provee una URL pública
     public_url = os.getenv("PUBLIC_URL")
     if public_url and not telegram_sender._is_mock():
         telegram_webhook_url = f"{public_url.rstrip('/')}/telegram/webhook"
@@ -275,6 +335,36 @@ def trigger_climate_alerts(response: Response):
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"status": "error", "message": "Fallo interno al enviar alertas."}
 
+@app.post("/alerts/survey", status_code=status.HTTP_200_OK)
+@app.get("/alerts/survey", status_code=status.HTTP_200_OK)
+def trigger_fortnightly_survey(response: Response):
+    """Scan and send fortnightly survey to all registered merchants."""
+    trace_id = secrets.token_hex(8)
+    log_json(
+        severity="INFO",
+        message="Iniciando envío manual de encuesta quincenal",
+        trace_id=trace_id
+    )
+    try:
+        sent_surveys = oraculo.check_and_send_fortnightly_survey()
+        log_json(
+            severity="INFO",
+            message="Envío de encuesta quincenal completado",
+            context={"surveys_sent_count": len(sent_surveys), "recipients": sent_surveys},
+            trace_id=trace_id
+        )
+        return {"status": "success", "surveys_sent_count": len(sent_surveys), "recipients": sent_surveys}
+    except Exception as e:
+        tb = "".join(traceback.format_exception(None, e, e.__traceback__))
+        log_json(
+            severity="CRITICAL",
+            message="Fallo al enviar encuestas quincenales",
+            context={"exception": str(e), "traceback": tb},
+            trace_id=trace_id
+        )
+        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        return {"status": "error", "message": "Fallo interno al enviar encuestas."}
+
 _cached_index_html = None
 
 @app.get("/", response_class=HTMLResponse)
@@ -303,6 +393,27 @@ def get_market_stall_image():
     if os.path.exists(img_path):
         return FileResponse(img_path)
     return Response(status_code=404)
+
+_cached_legal_html = None
+
+@app.get("/legal", response_class=HTMLResponse)
+def read_legal():
+    """Sirve los términos y condiciones de legal.html en memoria cacheada."""
+    global _cached_legal_html
+    if _cached_legal_html is None:
+        legal_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "legal.html")
+        if os.path.exists(legal_path):
+            try:
+                with open(legal_path, "r", encoding="utf-8") as f:
+                    _cached_legal_html = f.read()
+            except Exception:
+                _cached_legal_html = ""
+        else:
+            _cached_legal_html = ""
+            
+    if _cached_legal_html:
+        return HTMLResponse(content=_cached_legal_html)
+    return HTMLResponse(content="<h1>Términos de Servicio — Merma Cero</h1>")
 
 @app.get("/webhook", response_class=PlainTextResponse)
 def verify_webhook(
@@ -506,9 +617,10 @@ def run_cli_interactive():
 def run_tests():
     """Ejecuta de forma automatizada la batería de pruebas TDD del oráculo."""
     import unittest
+    import os
     print("Iniciando batería de pruebas unitarias locales...")
-    from merma_cero.test_merma_cero import TestMermaCeroSystem
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestMermaCeroSystem)
+    start_dir = os.path.dirname(os.path.abspath(__file__))
+    suite = unittest.TestLoader().discover(start_dir=start_dir, pattern="test_*.py")
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     sys.exit(0 if result.wasSuccessful() else 1)

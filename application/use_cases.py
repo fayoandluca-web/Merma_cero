@@ -100,6 +100,29 @@ class OraculoUseCase:
                 self.message_sender.send_message(phone, optin_msg)
                 return optin_msg
 
+        # Parsear respuesta a la encuesta quincenal de impacto si aplica
+        if vendor.message_history:
+            last_log = vendor.message_history[-1]
+            if last_log.get("type") == "fortnightly_survey":
+                match = re.match(r"^\s*\*?(?:opci[oó]n\s+)?([a-c])\)?\*?\s*$", text_clean)
+                if match:
+                    parsed_option: str = match.group(1).upper()
+                    thank_you_msg = (
+                        "¡Muchas gracias por responder! Tu estimación de ahorro quincenal ha sido registrada "
+                        "en tu bitácora de impacto social. ¡Juntos cuidamos tu flujo de caja!"
+                    )
+                    survey_response_log = {
+                        "timestamp": now,
+                        "type": "survey_response",
+                        "text_received": text,
+                        "parsed_option": parsed_option,
+                        "message_sent": thank_you_msg
+                    }
+                    vendor.message_history.append(survey_response_log)
+                    self.repository.save(vendor)
+                    self.message_sender.send_message(phone, thank_you_msg)
+                    return thank_you_msg
+
         # Loop de calibración de retroalimentación (O8)
         if text_clean in ["acierto", "correcto", "funcionó", "error", "incorrecto", "falló"]:
             is_accurate = text_clean in ["acierto", "correcto", "funcionó"]
@@ -369,4 +392,33 @@ class OraculoUseCase:
                 sent_alerts.append(vendor.phone)
                 
         return sent_alerts
+
+    def check_and_send_fortnightly_survey(self) -> List[str]:
+        """Escanea todos los vendedores y proactivamente les envía la encuesta quincenal si tienen opt_in activo.
+        
+        Returns:
+            List[str]: Lista de teléfonos a los que se envió la encuesta.
+        """
+        vendors = self.repository.get_all()
+        sent_surveys: List[str] = []
+        survey_message = (
+            "🔮 *Merma Cero — Encuesta de Impacto*\n\n"
+            "¡Hola! Queremos saber cuánto dinero estimas que te ahorró el oráculo esta quincena para seguir calibrando tu puesto. Responde con la letra de la opción que más se acerque:\n\n"
+            "*A)* Menos de 500 pesos\n"
+            "*B)* Entre 500 y 1,500 pesos\n"
+            "*C)* Más de 1,500 pesos"
+        )
+        now = time.time()
+        for vendor in vendors:
+            if vendor.opt_in:
+                self.message_sender.send_message(vendor.phone, survey_message)
+                log_entry = {
+                    "timestamp": now,
+                    "type": "fortnightly_survey",
+                    "message_sent": survey_message
+                }
+                vendor.message_history.append(log_entry)
+                self.repository.save(vendor)
+                sent_surveys.append(vendor.phone)
+        return sent_surveys
 

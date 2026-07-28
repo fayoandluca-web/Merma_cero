@@ -390,3 +390,112 @@ class TestMermaCeroSystem(unittest.TestCase):
         self.assertEqual(vendor.latitude, 19.00)
         self.assertEqual(vendor.longitude, -104.00)
 
+    def test_send_fortnightly_survey(self) -> None:
+        """Verifica el envío de la encuesta quincenal a usuarios con opt-in activo."""
+        phone_optin = "+523121112222"
+        phone_no_optin = "+523123334444"
+        
+        vendor1 = Vendor(
+            phone=phone_optin,
+            latitude=19.43,
+            longitude=-99.13,
+            inventory_category="seafood",
+            registration_timestamp=time.time(),
+            rate_limit_last_update=time.time(),
+            opt_in=True
+        )
+        vendor2 = Vendor(
+            phone=phone_no_optin,
+            latitude=19.43,
+            longitude=-99.13,
+            inventory_category="dairy",
+            registration_timestamp=time.time(),
+            rate_limit_last_update=time.time(),
+            opt_in=False
+        )
+        self.repo.save(vendor1)
+        self.repo.save(vendor2)
+        
+        self.whatsapp.clear_outbox()
+        sent = self.use_case.check_and_send_fortnightly_survey()
+        
+        # Debe enviar solo al que tiene opt-in
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(sent[0], phone_optin)
+        self.assertEqual(len(self.whatsapp.outbox), 1)
+        self.assertIn("Encuesta de Impacto", self.whatsapp.outbox[0][2])
+        
+        # El historial de mensajes del vendedor debe incluir la encuesta
+        vendor = self.repo.get_by_phone(phone_optin)
+        self.assertEqual(vendor.message_history[-1]["type"], "fortnightly_survey")
+
+    def test_parse_survey_responses(self) -> None:
+        """Verifica que las respuestas a la encuesta sean reconocidas e impacten en la bitácora."""
+        phone = "+523125556666"
+        vendor = Vendor(
+            phone=phone,
+            latitude=19.43,
+            longitude=-99.13,
+            inventory_category="flowers",
+            registration_timestamp=time.time(),
+            rate_limit_last_update=time.time(),
+            opt_in=True
+        )
+        self.repo.save(vendor)
+        
+        # Enviar la encuesta
+        self.use_case.check_and_send_fortnightly_survey()
+        
+        # Probar diferentes variaciones de respuesta
+        valid_inputs = ["A", "b", "opcion c", "opción a", "*b*", "*c)*"]
+        expected_options = ["A", "B", "C", "A", "B", "C"]
+        
+        for inp, expected in zip(valid_inputs, expected_options):
+            # Aseguramos que el último mensaje sea la encuesta (para simular el estado actual en cada ciclo)
+            vendor = self.repo.get_by_phone(phone)
+            vendor.message_history.append({
+                "timestamp": time.time(),
+                "type": "fortnightly_survey",
+                "message_sent": "Encuesta de Impacto"
+            })
+            self.repo.save(vendor)
+            
+            response = self.use_case.process_message(phone, inp)
+            self.assertIn("registrada en tu bitácora de impacto social", response)
+            
+            # Verificar base de datos
+            updated_vendor = self.repo.get_by_phone(phone)
+            last_log = updated_vendor.message_history[-1]
+            self.assertEqual(last_log["type"], "survey_response")
+            self.assertEqual(last_log["parsed_option"], expected)
+
+    def test_survey_not_matching_fallthrough(self) -> None:
+        """Verifica que si la respuesta no es una opción válida, continúe con el flujo estándar."""
+        phone = "+523127778888"
+        vendor = Vendor(
+            phone=phone,
+            latitude=19.43,
+            longitude=-99.13,
+            inventory_category="dairy",
+            registration_timestamp=time.time(),
+            rate_limit_last_update=time.time(),
+            opt_in=True
+        )
+        self.repo.save(vendor)
+        
+        # Enviar la encuesta
+        self.use_case.check_and_send_fortnightly_survey()
+        
+        # Enviar un mensaje no relacionado (ej: "hola" o "quiero flores")
+        response = self.use_case.process_message(phone, "quiero flores")
+        
+        # No debe ser una respuesta de encuesta de agradecimiento
+        self.assertNotIn("estimación de ahorro quincenal ha sido registrada", response)
+        # En su lugar, debe gatillar el oráculo (que responde con recomendación)
+        self.assertIn("Vida de Anaquel", response)
+        
+        # El historial de mensajes debe reflejar una consulta ordinaria y no un survey_response
+        updated_vendor = self.repo.get_by_phone(phone)
+        last_log = updated_vendor.message_history[-1]
+        self.assertEqual(last_log["type"], "inbound_request")
+
