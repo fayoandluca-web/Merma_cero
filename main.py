@@ -25,7 +25,7 @@ import zoneinfo
 
 # Importaciones de FastAPI
 from fastapi import FastAPI, Request, Response, status, Query
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 # Importaciones del Dominio e Infraestructura
@@ -274,6 +274,27 @@ def trigger_climate_alerts(response: Response):
         )
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"status": "error", "message": "Fallo interno al enviar alertas."}
+
+_cached_index_html = None
+
+@app.get("/", response_class=HTMLResponse)
+def read_root():
+    """Sirve la landing page interactiva index.html del oráculo en memoria cacheada."""
+    global _cached_index_html
+    if _cached_index_html is None:
+        index_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
+        if os.path.exists(index_path):
+            try:
+                with open(index_path, "r", encoding="utf-8") as f:
+                    _cached_index_html = f.read()
+            except Exception:
+                _cached_index_html = ""
+        else:
+            _cached_index_html = ""
+            
+    if _cached_index_html:
+        return HTMLResponse(content=_cached_index_html)
+    return HTMLResponse(content="<h1>Merma Cero: Oráculo Climático Online</h1>")
 
 @app.get("/webhook", response_class=PlainTextResponse)
 def verify_webhook(
