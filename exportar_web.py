@@ -13,70 +13,236 @@ HTML_CONTENT = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Merma Cero — Oráculo Estocástico de Resiliencia Climática</title>
     <meta name="description" content="Tesis tecnológica y simulador de resiliencia alimentaria para economía de subsistencia.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        /* Modern CSS Reset & Premium Design System */
+        /* Modern Reset & CSS Variables */
         :root {
-            --bg-color: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --border-color: rgba(255, 255, 255, 0.1);
+            --bg-color: #030712;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
             --primary: #38bdf8;
-            --primary-glow: rgba(56, 189, 248, 0.15);
+            --primary-gradient: linear-gradient(135deg, #38bdf8 0%, #10b981 100%);
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --glass-blur: blur(12px);
+            --text: #f3f4f6;
+            --text-muted: #9ca3af;
+            --glass-blur: blur(16px);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text);
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
-            background-image: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
-                              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+            background-image: radial-gradient(circle at 10% 15%, rgba(56, 189, 248, 0.04) 0%, transparent 45%),
+                              radial-gradient(circle at 90% 85%, rgba(16, 185, 129, 0.03) 0%, transparent 45%);
+            -webkit-font-smoothing: antialiased;
         }
 
-        header {
+        /* Header & Navigation */
+        nav {
             width: 100%;
-            max-width: 1200px;
-            padding: 2.5rem 1.5rem 1rem 1.5rem;
-            text-align: center;
+            height: 70px;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            background: rgba(3, 7, 18, 0.6);
+            border-bottom: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 2rem;
         }
 
-        .logo-glow {
-            font-size: 2.5rem;
+        .nav-container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
             font-weight: 800;
-            letter-spacing: -0.05em;
-            background: linear-gradient(135deg, var(--primary) 30%, var(--success));
+            background: var(--primary-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
-            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
         }
 
-        .subtitle {
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .btn-cta {
+            background: var(--primary-gradient);
+            color: #030712;
+            padding: 0.6rem 1.2rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.35);
+        }
+
+        /* Hero Section */
+        .hero {
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 130px;
+            padding: 2rem 1.5rem 4rem 1.5rem;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 2.5rem;
+                text-align: center;
+            }
+        }
+
+        .hero-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 40%, #a5f3fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @media (max-width: 600px) {
+            .hero-title {
+                font-size: 2.6rem;
+            }
+        }
+
+        .hero-desc {
             font-size: 1.1rem;
             color: var(--text-muted);
-            font-weight: 400;
-            margin-bottom: 2rem;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
         }
 
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        @media (max-width: 900px) {
+            .hero-actions {
+                justify-content: center;
+            }
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text);
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .hero-preview {
+            background: rgba(17, 24, 39, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: var(--glass-blur);
+            position: relative;
+            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.6);
+        }
+
+        .chat-bubble {
+            background: #1f2937;
+            padding: 1rem;
+            border-radius: 18px 18px 18px 2px;
+            max-width: 85%;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 1rem;
+        }
+
+        .chat-bubble.out {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: rgba(56, 189, 248, 0.2);
+            border-radius: 18px 18px 2px 18px;
+            margin-left: auto;
+            color: var(--primary);
+        }
+
+        /* Main Content Grid */
         main {
             width: 100%;
-            max-width: 1200px;
-            padding: 0 1.5rem 3rem 1.5rem;
+            max-width: 1100px;
+            padding: 0 1.5rem 4rem 1.5rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 2rem;
@@ -88,23 +254,28 @@ HTML_CONTENT = """<!DOCTYPE html>
             }
         }
 
-        /* Glassmorphism Card Style */
+        /* Cards & Styling */
         .card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 20px;
             backdrop-filter: var(--glass-blur);
             -webkit-backdrop-filter: var(--glass-blur);
-            padding: 2rem;
+            padding: 2.2rem;
             box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-            transition: transform 0.3s ease, border-color 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
         }
 
         .card:hover {
-            border-color: rgba(56, 189, 248, 0.25);
+            border-color: rgba(56, 189, 248, 0.2);
+            box-shadow: 0 20px 40px -20px rgba(56, 189, 248, 0.1);
+            transform: translateY(-2px);
         }
 
         h2 {
+            font-family: 'Outfit', sans-serif;
             font-size: 1.4rem;
             font-weight: 700;
             margin-bottom: 1.5rem;
@@ -112,49 +283,88 @@ HTML_CONTENT = """<!DOCTYPE html>
             padding-bottom: 0.75rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
+            letter-spacing: -0.01em;
         }
 
         /* Form Controls */
         .form-group {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
         }
 
         label {
             display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 0.85rem;
+            font-weight: 600;
             color: var(--text-muted);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        select, input[type="range"], input[type="number"] {
+        select {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.8rem 1rem;
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--text);
-            font-size: 1rem;
+            font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 16px;
         }
 
-        select:focus, input:focus {
+        select:focus {
             border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
         }
 
         .range-container {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 1.25rem;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            outline: none;
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            transition: transform 0.1s ease, background 0.3s;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+            background: #22d3ee;
         }
 
         .range-value {
+            font-family: 'Outfit', sans-serif;
             font-weight: 700;
             min-width: 3.5rem;
             text-align: right;
             color: var(--primary);
+            font-size: 1.05rem;
         }
 
         /* Results Display */
@@ -168,53 +378,62 @@ HTML_CONTENT = """<!DOCTYPE html>
         .metric-card {
             background: rgba(15, 23, 42, 0.4);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
+            border-radius: 14px;
+            padding: 1.5rem 1.25rem;
             text-align: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .metric-label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             color: var(--text-muted);
             margin-bottom: 0.5rem;
+            font-weight: 600;
         }
 
         .metric-value {
-            font-size: 2rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
             font-weight: 800;
             color: var(--primary);
         }
 
         .metric-unit {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
             color: var(--text-muted);
+            margin-top: 0.25rem;
         }
 
         .alert-box {
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(245, 158, 11, 0.08);
             border: 1px solid rgba(245, 158, 11, 0.2);
             color: var(--warning);
-            border-radius: 12px;
-            padding: 1rem;
+            border-radius: 14px;
+            padding: 1.2rem;
             display: flex;
             align-items: flex-start;
-            gap: 0.75rem;
+            gap: 0.8rem;
             font-size: 0.9rem;
-            line-height: 1.4;
+            line-height: 1.5;
             margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
         }
 
         .alert-box.success {
-            background: rgba(16, 185, 129, 0.1);
+            background: rgba(16, 185, 129, 0.08);
             border: 1px solid rgba(16, 185, 129, 0.2);
             color: var(--success);
         }
 
         .alert-box.danger {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.08);
             border: 1px solid rgba(239, 68, 68, 0.2);
             color: var(--danger);
         }
@@ -222,16 +441,60 @@ HTML_CONTENT = """<!DOCTYPE html>
         /* SVG/Canvas Chart Container */
         .chart-container {
             width: 100%;
-            height: 180px;
+            height: 190px;
             background: rgba(15, 23, 42, 0.4);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 14px;
             margin-top: 1rem;
             position: relative;
-            padding: 1rem;
+            padding: 1.2rem;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        /* Story Section (Quiénes Somos & Misión) */
+        .about-section {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 900px) {
+            .about-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .about-card {
+            background: linear-gradient(180deg, rgba(17, 24, 30, 0.8) 0%, rgba(10, 15, 24, 0.8) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2.2rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .about-card:hover {
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .about-text {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-top: 1rem;
+        }
+
+        .about-text p {
+            margin-bottom: 1.2rem;
+        }
+
+        .highlight-text {
+            color: var(--text);
+            font-weight: 500;
         }
 
         /* Documentation & Thesis section */
@@ -243,65 +506,155 @@ HTML_CONTENT = """<!DOCTYPE html>
         .accordion {
             margin-bottom: 1rem;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
+            transition: border-color 0.3s ease;
+        }
+
+        .accordion:hover {
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .accordion-header {
             background: var(--card-bg);
-            padding: 1rem 1.5rem;
+            padding: 1.1rem 1.5rem;
             cursor: pointer;
             font-weight: 600;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 0.95rem;
+            user-select: none;
+            transition: background 0.3s ease;
+        }
+
+        .accordion-header:hover {
+            background: rgba(30, 41, 59, 0.8);
         }
 
         .accordion-content {
             padding: 1.5rem;
-            background: rgba(15, 23, 42, 0.2);
+            background: rgba(15, 23, 42, 0.3);
             border-top: 1px solid var(--border-color);
             display: none;
             line-height: 1.6;
             color: var(--text-muted);
+            font-size: 0.9rem;
+            animation: fadeIn 0.4s ease-out;
         }
 
-        .accordion-content h3 {
-            color: var(--text);
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-
-        .accordion-content p {
-            margin-bottom: 1rem;
+        .accordion-content code {
+            display: block;
+            background: rgba(3, 7, 18, 0.6);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            color: var(--primary);
+            margin: 0.75rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            overflow-x: auto;
         }
 
         .accordion-content ul {
             margin-left: 1.5rem;
-            margin-bottom: 1rem;
+            margin-top: 0.5rem;
         }
 
+        .accordion-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Animations & Entry Effects */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animated-entry {
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .delay-1 { animation-delay: 0.15s; }
+        .delay-2 { animation-delay: 0.3s; }
+        .delay-3 { animation-delay: 0.45s; }
+
         footer {
-            padding: 2rem;
+            padding: 3rem 2rem;
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-align: center;
             border-top: 1px solid var(--border-color);
             width: 100%;
-            max-width: 1200px;
-            margin-top: auto;
+            max-width: 1100px;
+            margin-top: 5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        @media (max-width: 600px) {
+            footer {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 2rem;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo-glow">🔮 Merma Cero</div>
-        <div class="subtitle">Oráculo de Resiliencia Climática para la Economía Popular</div>
-    </header>
+    <!-- Navigation Bar -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo" onclick="window.scrollTo(0,0)">
+                <span>🔮</span> Merma Cero
+            </div>
+            <div class="nav-links">
+                <a href="#simulator">Simulador</a>
+                <a href="#about">Nosotros</a>
+                <a href="#math">Tesis</a>
+                <a href="https://wa.me/14155238886?text=join%20have-information" target="_blank" class="btn-cta">Probar en WhatsApp</a>
+            </div>
+        </div>
+    </nav>
 
-    <main>
-        <!-- Panel de Control e Inputs -->
-        <section class="card">
+    <!-- Hero Section -->
+    <section class="hero animated-entry">
+        <div>
+            <h1 class="hero-title">Ciencia de datos para proteger el sustento familiar</h1>
+            <p class="hero-desc">Democratizamos la física y la econometría predictiva para la economía popular. Reducimos la merma del 15% al 5% mediante recomendaciones de compra personalizadas enviadas directamente por WhatsApp.</p>
+            <div class="hero-actions">
+                <a href="https://wa.me/14155238886?text=join%20have-information" target="_blank" class="btn-cta" style="padding: 0.85rem 1.8rem; font-size: 0.95rem;">Chatear con el Oráculo</a>
+                <a href="#simulator" class="btn-secondary">Probar Simulador</a>
+            </div>
+        </div>
+        <div class="hero-preview">
+            <div class="chat-bubble">
+                Hola, vendo pescado en lat 19.43 lon -99.13
+            </div>
+            <div class="chat-bubble out">
+                🔮 <b>Merma Cero — Oráculo Climático</b><br>
+                🌡️ <b>Pronóstico:</b> 28.5°C | Humedad: 65%<br>
+                ⏳ <b>Vida de Anaquel:</b> 3.2 días est.<br>
+                📦 <b>Compra Sugerida:</b> Adquirir el <b>72%</b> del volumen diario habitual para evitar mermas hoy.
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Grid Section -->
+    <main id="simulator">
+        <!-- Control Panel (Parameters) -->
+        <section class="card animated-entry delay-1">
             <h2>⚙️ Parámetros de Operación</h2>
             
             <div class="form-group">
@@ -340,17 +693,17 @@ HTML_CONTENT = """<!DOCTYPE html>
             </div>
             
             <div class="form-group">
-                <label for="volatility">Volatilidad Climática Proyectada (Choques GARCH)</label>
+                <label for="volatility">Volatilidad Climática Proyectada (GARCH)</label>
                 <select id="volatility" onchange="runSimulation()">
                     <option value="1.0">Estable / Promedio (Varianza Condicional ~ 1.0)</option>
                     <option value="1.8">Moderada (Varianza Condicional ~ 1.8)</option>
-                    <option value="3.0">Alta / Frente Frío (Varianza Condicional ~ 3.0)</option>
+                    <option value="3.0">Alta / Choque Térmico (Varianza Condicional ~ 3.0)</option>
                 </select>
             </div>
         </section>
 
-        <!-- Resultados e Indicadores -->
-        <section class="card">
+        <!-- Indicators Panel -->
+        <section class="card animated-entry delay-1">
             <h2>📊 Indicadores del Oráculo</h2>
             
             <div class="metric-grid">
@@ -367,7 +720,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             </div>
 
             <div id="status-alert" class="alert-box">
-                <!-- Se inyecta la recomendación adaptada -->
+                <!-- Recommendations are injected here -->
             </div>
 
             <h2>📉 Distribución de Pérdidas a 48h (Monte Carlo)</h2>
@@ -376,51 +729,83 @@ HTML_CONTENT = """<!DOCTYPE html>
             </div>
         </section>
 
-        <!-- Sección de Tesis y Documentación -->
-        <section class="card doc-section">
+        <!-- About Us section (Quiénes Somos & Misión) -->
+        <section id="about" class="about-section animated-entry delay-2">
+            <div class="about-card">
+                <h2>🎯 Qué Hacemos (Misión)</h2>
+                <div class="about-text">
+                    <p class="highlight-text">Democratizar la analítica prescriptiva para los microcomerciantes informales de México.</p>
+                    <p>Los pequeños comerciantes populares (tianguistas y puesteros) pierden diariamente entre el 15% y el 35% de sus ingresos por descomposiciones térmicas o desabasto. Las grandes cadenas evitan estas pérdidas mediante software corporativo de millones de dólares.</p>
+                    <p><b>Merma Cero</b> cambia las reglas del juego: procesa las coordenadas geográficas de un puesto de mercado, descarga el pronóstico meteorológico satelital y resuelve modelos termodinámicos avanzados directamente para entregar sugerencias sin fricción a través de un mensaje de WhatsApp.</p>
+                </div>
+            </div>
+
+            <div class="about-card">
+                <h2>👤 Quiénes Somos (Origen)</h2>
+                <div class="about-text">
+                    <p class="highlight-text">Tecnología inspirada en la familia y construida con rigor científico.</p>
+                    <p>Detrás de Merma Cero se encuentra <b>Fabio Israel Ríos Gutiérrez</b>, un desarrollador y estudiante de 17 años motivado por proteger el sustento económico de su propia familia. La idea nació al observar cómo las olas de calor afectaban directamente el inventario del puesto de frutas y verduras de su <b>tío Chucho en el tianguis de Colima</b>.</p>
+                    <p>Conectando la física clásica de los alimentos con los solvers de volatilidad que se utilizan en Wall Street, Fabio construyó este oráculo estocástico como un acto de soberanía y justicia tecnológica.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Math & Documentation Section -->
+        <section id="math" class="card doc-section animated-entry delay-3">
             <h2>📖 Marco Teórico y Matemático</h2>
             
             <div class="accordion">
                 <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🔬 Cinética Arrhenius Modificada</span>
+                    <span>🔬 Cinética de Descomposición Arrhenius Modificada</span>
                     <span>▼</span>
                 </div>
                 <div class="accordion-content">
-                    <p>La velocidad de degradación física diaria $K$ se calcula a través de la ecuación de Arrhenius acoplada con un modulador de humedad libre:</p>
-                    <p><code>K = K₀ · exp(-Ea / (R · T)) · (1 + α · H)</code></p>
+                    <p>La constante de velocidad de decaimiento físico ($K$) modela la degradación térmica del producto acoplando la humedad relativa ($H$) como un modulador multiplicativo para incorporar la higroscopía:</p>
+                    <code>K(T, H) = K₀ · exp(-Ea / (R · T_Kelvin)) · (1 + α · H)</code>
+                    <p>Donde:</p>
                     <ul>
-                        <li><b>Ea (Energía de Activación):</b> Define la sensibilidad a las variaciones térmicas.</li>
-                        <li><b>α (Coeficiente de Humedad):</b> Positivo para acelerar (por proliferación bacteriana en humedad, ej. mariscos) y negativo para proteger (evitando deshidratación en flores).</li>
+                        <li><b>Ea (Energía de Activación):</b> La energía mínima necesaria para activar la descomposición térmica (específica de cada categoría de alimento).</li>
+                        <li><b>α (Coeficiente de Aceleración):</b> Coeficiente empírico de aceleración por humedad relativa. Es positivo en mariscos y lácteos (el exceso de humedad favorece la proliferación bacteriana) y negativo en flores (la humedad protege de la marchitez).</li>
                     </ul>
                 </div>
             </div>
 
             <div class="accordion">
                 <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🎲 Dimensionamiento Kelly Estocástico</span>
+                    <span>🎲 Dimensionamiento Kelly Estocástico (Sizing)</span>
                     <span>▼</span>
                 </div>
                 <div class="accordion-content">
-                    <p>El optimizador resuelve la cantidad de stock $S^*$ que maximiza la utilidad esperada penalizada por volatilidad de cartera:</p>
-                    <p><code>S* = argmax_Q [ E[Profit(Q)] - λ · Std(Profit(Q)) ]</code></p>
-                    <p>Donde la demanda se reduce drásticamente por lluvia (menos afluencia de transeúntes) o temperaturas excesivas (desconfianza en mariscos frescos o decaimiento floral).</p>
+                    <p>Para calcular la cantidad de compra óptima $S^*$ que minimiza las pérdidas sin perder ventas, resolvemos el problema de optimización cuadrática inspirado en la teoría de portafolios (Markowitz Mean-Variance):</p>
+                    <code>S* = argmax_Q [ E[Profit(Q)] - λ · Std(Profit(Q)) ]</code>
+                    <p>Donde la ganancia unitaria se ve reducida por la degradación del precio de salvamento de acuerdo al decaimiento Arrhenius calculado:</p>
+                    <code>Salvage_efectivo = Salvage_base · exp(-K)</code>
+                    <p>Además, la media de la demanda proyectada se escala dinámicamente si hay alta probabilidad de precipitaciones (lluvia en el tianguis) o temperaturas de alerta.</p>
                 </div>
             </div>
 
             <div class="accordion">
                 <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>📈 Filtro GARCH(1,1) e Incertidumbre</span>
+                    <span>📈 Volatilidad Condicional GARCH(1,1)</span>
                     <span>▼</span>
                 </div>
                 <div class="accordion-content">
-                    <p>La varianza condicional del clima <code>σ_t² = ω + α·ε_{t-1}² + β·σ_{t-1}²</code> obtenida de los residuos térmicos se utiliza para escalar la desviación estándar de la demanda operativa. Mayor volatilidad del clima se traduce en un margen de seguridad más amplio y compras más conservadoras.</p>
+                    <p>La volatilidad condicional climática $\sigma_t^2$ refleja la incertidumbre en los cambios abruptos de temperatura extrema. Se modela mediante un proceso autorregresivo estocástico:</p>
+                    <code>σ_t² = ω + a · ε_{t-1}² + β · σ_{t-1}²</code>
+                    <p>Donde mayor volatilidad proyectada escala la incertidumbre de la demanda diaria, ensanchando el margen de seguridad para evitar compras de alto riesgo en días inestables.</p>
                 </div>
             </div>
         </section>
     </main>
 
+    <!-- Footer -->
     <footer>
-        Proyecto Merma Cero — Código Libre de Resistencia Tecnológica bajo Licencia MIT.
+        <div>
+            Proyecto Merma Cero — Diseñado por Fabio Israel Ríos Gutiérrez.
+        </div>
+        <div>
+            Código Libre bajo Licencia MIT (Open Source).
+        </div>
     </footer>
 
     <script>
@@ -444,7 +829,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             }
         }
 
-        // Box-Muller
+        // Box-Muller para distribución normal
         function boxMuller(rand) {
             let u = 0, v = 0;
             while(u === 0) u = rand();
