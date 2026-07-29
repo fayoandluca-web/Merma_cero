@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red de Resiliencia Climática — Merma Cero</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <style>
+        /* Modern Minimalist B&W Editorial Design System */
+        :root {
+            --bg-color: #ffffff;
+            --surface: #fafafa;
+            --text: #18181b;
+            --text-muted: #71717a;
+            --border-color: #e4e4e7;
+            --primary: #18181b;
+            --highlight: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout Grid */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        @media (max-width: 900px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            background-color: var(--bg-color);
+            border-right: 1px solid var(--border-color);
+            padding: 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        header {
+            margin-bottom: 2.5rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.01em;
+            transition: transform 0.2s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateX(-4px);
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+        }
+
+        .description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Dashboard widgets */
+        .stats-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .widget {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1.25rem;
+            background-color: var(--surface);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .widget-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .widget-value {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--highlight);
+            line-height: 1;
+        }
+
+        .widget-unit {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-left: 0.25rem;
+        }
+
+        /* Lists */
+        .list-section {
+            margin-bottom: 2rem;
+        }
+
+        .list-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.35rem;
+        }
+
+        .stats-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .stats-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+
+        .stats-list-item-label {
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .stats-list-item-value {
+            font-family: monospace;
+            font-weight: 700;
+            background-color: var(--border-color);
+            padding: 0.1rem 0.4rem;
+            border-radius: 2px;
+            font-size: 0.8rem;
+        }
+
+        /* Map Container */
+        .map-container {
+            height: 100%;
+            width: 100%;
+            position: relative;
+            background-color: #f3f3f3;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Map Popup Styling (CartoDB Grayscale Theme Match) */
+        .leaflet-popup-content-wrapper {
+            background-color: var(--bg-color) !important;
+            border-radius: 4px !important;
+            border: 1px solid var(--text) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        .leaflet-popup-tip {
+            background-color: var(--bg-color) !important;
+            border: 1px solid var(--text) !important;
+        }
+
+        .leaflet-popup-content {
+            margin: 12px 16px !important;
+        }
+
+        .custom-div-icon {
+            background: none !important;
+            border: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        /* Footer info */
+        footer {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+            margin-top: auto;
+        }
+
+        /* Micro-animations */
+        .pulse-live {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #000;
+            border-radius: 50%;
+            margin-right: 0.4rem;
+            animation: pulse-animation 1.8s infinite ease-in-out;
+        }
+
+        @keyframes pulse-animation {
+            0% {
+                transform: scale(0.85);
+                opacity: 0.4;
+            }
+            50% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.85);
+                opacity: 0.4;
+            }
+        }
+
+        .live-status {
+            display: flex;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar and Dashboard Controls -->
+        <aside class="sidebar">
+            <div>
+                <a href="/" class="back-btn">← Volver al Portal</a>
+                <header>
+                    <h1>Red de Resiliencia Climática</h1>
+                    <p class="description">Red soberana de comerciantes reales que optimizan su inventario y protegen sus ingresos frente al cambio climático.</p>
+                    <div class="live-status">
+                        <span class="pulse-live"></span>
+                        <span>Monitoreo en Tiempo Real</span>
+                    </div>
+                </header>
+
+                <div class="stats-section">
+                    <!-- Widget 1: Ahorro Total -->
+                    <div class="widget">
+                        <span class="widget-label">Ahorro Neto Acumulado</span>
+                        <div>
+                            <span class="widget-value" id="stat-savings">0.00</span>
+                            <span class="widget-unit">MXN</span>
+                        </div>
+                    </div>
+
+                    <!-- Widget 2: Registros Reales -->
+                    <div class="widget">
+                        <span class="widget-label">Comerciantes Activos</span>
+                        <div>
+                            <span class="widget-value" id="stat-merchants">0</span>
+                            <span class="widget-unit">puestos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Ciudades Top -->
+                <div class="list-section">
+                    <h3 class="list-title">Ciudades Destacadas</h3>
+                    <ul class="stats-list" id="stats-cities">
+                        <li class="stats-list-item" style="color: var(--text-muted); font-style: italic;">Esperando registros reales...</li>
+                    </ul>
+                </div>
+
+                <!-- Distribución por Giros -->
+                <div class="list-section">
+                    <h3 class="list-title">Tipos de Negocio</h3>
+                    <ul class="stats-list" id="stats-categories">
+                        <li class="stats-list-item" style="color: var(--text-muted); font-style: italic;">Esperando registros reales...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <footer>
+                <strong>Merma Cero Oráculo</strong><br>
+                Solo se grafican comerciantes con opt-in activo y registros directos desde mensajería.
+            </footer>
+        </aside>
+
+        <!-- Standalone Map Panel -->
+        <main class="map-container">
+            <div id="map"></div>
+        </main>
+    </div>
+
+    <!-- Leaflet.js Javascript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script>
+        // Configuración inicial del mapa de México
+        var map = L.map('map', {
+            scrollWheelZoom: true
+        }).setView([23.6345, -102.5528], 5);
+
+        // Capa de mapa gris CartoDB Positron
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        var markersGroup = L.layerGroup().addTo(map);
+
+        // Mapeos visuales de categorías
+        var categoryIcons = {
+            seafood: '🐟',
+            flowers: '🌸',
+            fruit_vegetables: '🥦',
+            dairy: '🧀',
+            generic: '📦'
+        };
+
+        var categoryNames = {
+            seafood: 'Pescados y Mariscos',
+            flowers: 'Flores y Plantas',
+            fruit_vegetables: 'Frutas y Verduras',
+            dairy: 'Lácteos y Quesos',
+            generic: 'Mercancía General'
+        };
+
+        // Función para actualizar datos y estadísticas de forma síncrona
+        function updateDashboardData() {
+            // 1. Cargar estadísticas agregadas reales
+            fetch('/api/stats')
+                .then(function(res) { return res.json(); })
+                .then(function(stats) {
+                    document.getElementById('stat-savings').textContent = Number(stats.total_savings).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('stat-merchants').textContent = stats.total_merchants;
+
+                    // Poblar ciudades top
+                    var citiesList = document.getElementById('stats-cities');
+                    citiesList.innerHTML = '';
+                    if (stats.top_cities.length === 0) {
+                        citiesList.innerHTML = '<li class="stats-list-item" style="color: var(--text-muted); font-style: italic;">Sin ubicaciones reales aún</li>';
+                    } else {
+                        stats.top_cities.forEach(function(item) {
+                            var li = document.createElement('li');
+                            li.className = 'stats-list-item';
+                            li.innerHTML = `<span class="stats-list-item-label">${item.city}</span><span class="stats-list-item-value">${item.count}</span>`;
+                            citiesList.appendChild(li);
+                        });
+                    }
+
+                    // Poblar categorías de negocios
+                    var catList = document.getElementById('stats-categories');
+                    catList.innerHTML = '';
+                    var hasCategories = false;
+                    for (var catKey in stats.categories) {
+                        hasCategories = true;
+                        var count = stats.categories[catKey];
+                        var name = categoryNames[catKey] || 'Mercancía General';
+                        var icon = categoryIcons[catKey] || '📦';
+                        
+                        var li = document.createElement('li');
+                        li.className = 'stats-list-item';
+                        li.innerHTML = `<span class="stats-list-item-label">${icon} ${name}</span><span class="stats-list-item-value">${count}</span>`;
+                        catList.appendChild(li);
+                    }
+                    if (!hasCategories) {
+                        catList.innerHTML = '<li class="stats-list-item" style="color: var(--text-muted); font-style: italic;">Sin categorías registradas</li>';
+                    }
+                })
+                .catch(function(err) {
+                    console.error("Error al cargar estadísticas reales:", err);
+                });
+
+            // 2. Cargar y pintar comerciantes reales en el mapa
+            fetch('/api/vendors')
+                .then(function(res) { return res.json(); })
+                .then(function(vendors) {
+                    markersGroup.clearLayers();
+                    
+                    if (vendors.length === 0) {
+                        return;
+                    }
+
+                    var latLngs = [];
+
+                    vendors.forEach(function(vendor) {
+                        var iconChar = categoryIcons[vendor.inventory_category] || '📦';
+                        var catName = categoryNames[vendor.inventory_category] || 'Mercancía General';
+                        
+                        var customDivIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: `<div style="font-size: 22px; filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.3));">${iconChar}</div>`,
+                            iconSize: [26, 26],
+                            iconAnchor: [13, 13]
+                        });
+
+                        var popupContent = `
+                            <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text);">
+                                <strong style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text); display: block; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; margin-bottom: 6px;">${vendor.name}</strong>
+                                <span style="color: var(--text-muted);">Giro:</span> <b>${iconChar} ${catName}</b><br>
+                                <span style="color: var(--text-muted);">Dirección:</span> <b>${vendor.address || 'Colima, México'}</b>
+                            </div>
+                        `;
+
+                        var marker = L.marker([vendor.latitude, vendor.longitude], { icon: customDivIcon })
+                            .bindPopup(popupContent);
+                        
+                        markersGroup.addLayer(marker);
+                        latLngs.push([vendor.latitude, vendor.longitude]);
+                    });
+
+                    // Si hay comerciantes, enfocar el mapa para encuadrarlos a todos
+                    if (latLngs.length > 0) {
+                        var bounds = L.latLngBounds(latLngs);
+                        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+                    }
+                })
+                .catch(function(err) {
+                    console.error("Error al obtener los comerciantes del mapa:", err);
+                });
+        }
+
+        // Ejecución inicial y temporizador de actualización
+        updateDashboardData();
+        setInterval(updateDashboardData, 20000); // Refrescar cada 20 segundos
+    </script>
+</body>
+</html>

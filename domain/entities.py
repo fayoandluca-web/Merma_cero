@@ -51,6 +51,7 @@ class Vendor(BaseModel):
     opt_in: bool = Field(False, description="Consentimiento explícito de opt-in de WhatsApp")
     name: str = Field("Comerciante Anónimo", description="Nombre del comerciante o de su negocio")
     address: str = Field("Colima, México", description="Ubicación o dirección textual del puesto")
+    is_simulated: bool = Field(False, description="Flag que indica si es un registro simulado o semilla")
 
 
 

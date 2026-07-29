@@ -389,7 +389,7 @@ def get_vendors_api():
                 "registration_timestamp": float(vendor.registration_timestamp),
                 "address": vendor.address
             }
-            for vendor in vendors if vendor.opt_in
+            for vendor in vendors if vendor.opt_in and not vendor.is_simulated
         ]
     except Exception as e:
         log_json(
@@ -398,6 +398,74 @@ def get_vendors_api():
             context={"error": str(e)}
         )
         return []
+
+@app.get("/api/stats", status_code=status.HTTP_200_OK)
+def get_stats_api():
+    """Retorna las estadísticas acumuladas en tiempo real de los comerciantes registrados reales."""
+    try:
+        vendors = repo.get_all()
+        real_vendors = [v for v in vendors if v.opt_in and not v.is_simulated]
+        
+        # 1. Total comerciantes
+        total_merchants = len(real_vendors)
+        
+        # 2. Total dinero salvado
+        total_savings = 0.0
+        for vendor in real_vendors:
+            for log in vendor.message_history:
+                # Si el log contiene métricas y fue una predicción
+                if isinstance(log, dict) and log.get("type") in ["inbound_request", "proactive_alert"]:
+                    metrics = log.get("metrics")
+                    if isinstance(metrics, dict):
+                        # Sumar el ahorro estimado
+                        total_savings += float(metrics.get("saved_cost_estimated", 0.0))
+        
+        # 3. Categorías
+        categories = {}
+        for vendor in real_vendors:
+            cat = vendor.inventory_category
+            categories[cat] = categories.get(cat, 0) + 1
+            
+        # 4. Ciudades Top
+        cities = {}
+        for vendor in real_vendors:
+            # Obtener el nombre de la ciudad/localidad de la dirección
+            addr = vendor.address.split(",")[-1].strip() if "," in vendor.address else vendor.address.strip()
+            if addr:
+                cities[addr] = cities.get(addr, 0) + 1
+        
+        # Ordenar ciudades por frecuencia
+        sorted_cities = sorted(cities.items(), key=lambda x: x[1], reverse=True)
+        top_cities = [{"city": k, "count": v} for k, v in sorted_cities[:5]]
+        
+        return {
+            "total_merchants": total_merchants,
+            "total_savings": round(total_savings, 2),
+            "categories": categories,
+            "top_cities": top_cities
+        }
+    except Exception as e:
+        log_json(
+            severity="ERROR",
+            message="Fallo al obtener estadísticas para la API",
+            context={"error": str(e)}
+        )
+        return {
+            "total_merchants": 0,
+            "total_savings": 0.0,
+            "categories": {},
+            "top_cities": []
+        }
+
+@app.get("/mapa", response_class=HTMLResponse)
+@app.get("/map", response_class=HTMLResponse)
+def get_map_page():
+    """Sirve la página independiente del mapa interactivo de México con estadísticas en tiempo real."""
+    map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mapa.html")
+    if os.path.exists(map_path):
+        with open(map_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>Mapa no encontrado</h1>", status_code=404)
 
 _cached_index_html = None
 

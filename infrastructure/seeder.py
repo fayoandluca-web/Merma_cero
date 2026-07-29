@@ -296,7 +296,7 @@ def seed_database(repo: VendorRepositoryPort) -> None:
 
         # 5. Agregar registro a la lista de inserción masiva
         # Los campos en orden para la consulta SQL:
-        # phone, latitude, longitude, inventory_category, registration_timestamp, rate_limit_tokens, rate_limit_last_update, message_history, opt_in, name, address
+        # phone, latitude, longitude, inventory_category, registration_timestamp, rate_limit_tokens, rate_limit_last_update, message_history, opt_in, name, address, is_simulated
         data_to_insert.append((
             phone,
             lat,
@@ -308,7 +308,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
             history_json,
             1,                 # opt_in (True para todos los pre-sembrados con interacciones)
             name,              # name
-            market["name"]     # address
+            market["name"],    # address
+            1                  # is_simulated
         ))
 
     # 6. Guardar registros en masa de manera transaccional y optimizada en SQLite
@@ -318,13 +319,12 @@ def seed_database(repo: VendorRepositoryPort) -> None:
             conn = repo._get_connection()
             try:
                 cursor = conn.cursor()
-                # Usar una sola transacción atómica y executemany para velocidad extrema
                 cursor.executemany("""
                     INSERT OR REPLACE INTO vendors (
                         phone, latitude, longitude, inventory_category, 
                         registration_timestamp, rate_limit_tokens, 
-                        rate_limit_last_update, message_history, opt_in, name, address
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        rate_limit_last_update, message_history, opt_in, name, address, is_simulated
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, data_to_insert)
                 conn.commit()
             except Exception as e:
@@ -348,7 +348,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
                     message_history=json.loads(item[7]),
                     opt_in=bool(item[8]),
                     name=item[9],
-                    address=item[10]
+                    address=item[10],
+                    is_simulated=bool(item[11])
                 )
                 repo.save(vendor_obj)
         except Exception as e:

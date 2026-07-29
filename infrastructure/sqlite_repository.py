@@ -64,6 +64,11 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                 except sqlite3.OperationalError:
                     # La columna ya existe, omitir
                     pass
+                try:
+                    cursor.execute("ALTER TABLE vendors ADD COLUMN is_simulated INTEGER DEFAULT 0")
+                except sqlite3.OperationalError:
+                    # La columna ya existe, omitir
+                    pass
                 conn.commit()
             finally:
                 conn.close()
@@ -77,7 +82,7 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                 cursor.execute("""
                     SELECT phone, latitude, longitude, inventory_category, 
                            registration_timestamp, rate_limit_tokens, 
-                           rate_limit_last_update, message_history, opt_in, name, address 
+                           rate_limit_last_update, message_history, opt_in, name, address, is_simulated 
                     FROM vendors WHERE phone = ?
                 """, (phone,))
                 row = cursor.fetchone()
@@ -87,10 +92,11 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                 # Deserializar el historial de mensajes
                 history = json.loads(row[7])
                 
-                # Manejar compatibilidad si opt_in/name/address no están en la base de datos (por si acaso)
+                # Manejar compatibilidad si opt_in/name/address/is_simulated no están en la base de datos (por si acaso)
                 opt_in_val = bool(row[8]) if len(row) > 8 else False
                 name_val = row[9] if len(row) > 9 else "Comerciante Anónimo"
                 address_val = row[10] if len(row) > 10 else "Colima, México"
+                is_simulated_val = bool(row[11]) if len(row) > 11 else False
                 
                 return Vendor(
                     phone=row[0],
@@ -103,7 +109,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                     message_history=history,
                     opt_in=opt_in_val,
                     name=name_val,
-                    address=address_val
+                    address=address_val,
+                    is_simulated=is_simulated_val
                 )
             except Exception:
                 # En caso de fallo (ej. base de datos vacía o corrupta), retornamos None para auto-recuperación
@@ -123,8 +130,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                     INSERT INTO vendors (
                         phone, latitude, longitude, inventory_category, 
                         registration_timestamp, rate_limit_tokens, 
-                        rate_limit_last_update, message_history, opt_in, name, address
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        rate_limit_last_update, message_history, opt_in, name, address, is_simulated
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(phone) DO UPDATE SET
                         latitude=excluded.latitude,
                         longitude=excluded.longitude,
@@ -134,7 +141,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                         message_history=excluded.message_history,
                         opt_in=excluded.opt_in,
                         name=excluded.name,
-                        address=excluded.address
+                        address=excluded.address,
+                        is_simulated=excluded.is_simulated
                 """, (
                     vendor.phone,
                     vendor.latitude,
@@ -146,7 +154,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                     history_json,
                     1 if vendor.opt_in else 0,
                     vendor.name,
-                    vendor.address
+                    vendor.address,
+                    1 if vendor.is_simulated else 0
                 ))
                 conn.commit()
             except Exception as e:
@@ -165,7 +174,7 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                 cursor.execute("""
                     SELECT phone, latitude, longitude, inventory_category, 
                            registration_timestamp, rate_limit_tokens, 
-                           rate_limit_last_update, message_history, opt_in, name, address 
+                           rate_limit_last_update, message_history, opt_in, name, address, is_simulated 
                     FROM vendors
                 """)
                 rows = cursor.fetchall()
@@ -174,6 +183,7 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                     opt_in_val = bool(row[8]) if len(row) > 8 else False
                     name_val = row[9] if len(row) > 9 else "Comerciante Anónimo"
                     address_val = row[10] if len(row) > 10 else "Colima, México"
+                    is_simulated_val = bool(row[11]) if len(row) > 11 else False
                     vendors.append(Vendor(
                         phone=row[0],
                         latitude=row[1],
@@ -185,7 +195,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                         message_history=history,
                         opt_in=opt_in_val,
                         name=name_val,
-                        address=address_val
+                        address=address_val,
+                        is_simulated=is_simulated_val
                     ))
             finally:
                 conn.close()
