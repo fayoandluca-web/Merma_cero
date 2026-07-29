@@ -42,8 +42,16 @@ def seed_database(repo: VendorRepositoryPort) -> None:
         try:
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM vendors")
-            count: int = cursor.fetchone()[0]
-            is_empty = (count < 10)
+            total_count: int = cursor.fetchone()[0]
+            
+            count_default = 0
+            if total_count >= 10:
+                try:
+                    cursor.execute("SELECT COUNT(*) FROM vendors WHERE address = 'Colima, México'")
+                    count_default = cursor.fetchone()[0]
+                except Exception:
+                    pass
+            is_empty = (total_count < 10 or count_default > 900)
         except Exception:
             # Si hay algún problema, por ejemplo, que la tabla no esté inicializada
             is_empty = True
@@ -53,7 +61,9 @@ def seed_database(repo: VendorRepositoryPort) -> None:
         # Fallback para otros repositorios (ej. JSONVendorRepository)
         try:
             all_vendors = repo.get_all()
-            is_empty = (len(all_vendors) < 10)
+            total_count = len(all_vendors)
+            count_default = sum(1 for v in all_vendors if getattr(v, "address", "") == "Colima, México")
+            is_empty = (total_count < 10 or count_default > 900)
         except Exception:
             is_empty = True
 
