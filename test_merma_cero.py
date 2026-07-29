@@ -64,7 +64,19 @@ class TestMermaCeroSystem(unittest.TestCase):
         optin_resp = self.use_case.process_message(phone, "ACEPTO")
         self.assertIn("activado Merma Cero", optin_resp)
         
-        # 2. Enviar datos de producto y ubicación para obtener predicción
+        # 2. Enviar Nombre
+        name_resp = self.use_case.process_message(phone, "Fabio Israel")
+        self.assertIn("¿cuántos años tienes?", name_resp)
+        
+        # 3. Enviar Edad
+        age_resp = self.use_case.process_message(phone, "17")
+        self.assertIn("¿Cuánto tiempo llevas con tu negocio?", age_resp)
+        
+        # 4. Enviar Antigüedad
+        years_resp = self.use_case.process_message(phone, "2")
+        self.assertIn("Registro completado con éxito", years_resp)
+        
+        # 5. Enviar datos de producto y ubicación para obtener predicción
         message = "Hola, vendo pescado en lat 19.43 lon -99.13"
         response = self.use_case.process_message(phone, message)
 
@@ -75,6 +87,8 @@ class TestMermaCeroSystem(unittest.TestCase):
         self.assertEqual(saved_vendor.inventory_category, "seafood")
         self.assertAlmostEqual(saved_vendor.latitude, 19.43)
         self.assertAlmostEqual(saved_vendor.longitude, -99.13)
+        self.assertEqual(saved_vendor.age, 17)
+        self.assertEqual(saved_vendor.business_years, 2.0)
 
         # Assert: Salida de mensajería generada
         self.assertIn("Pescados y Mariscos", response)
@@ -167,7 +181,10 @@ class TestMermaCeroSystem(unittest.TestCase):
             inventory_category="generic",
             registration_timestamp=time.time(),
             rate_limit_last_update=time.time(),
-            opt_in=True
+            opt_in=True,
+            name="Tío Chucho",
+            age=45,
+            business_years=10.0
         )
         self.repo.save(vendor)
         
@@ -326,7 +343,19 @@ class TestMermaCeroSystem(unittest.TestCase):
         """Verifica que la retroalimentación de acierto/error actualice el log e informe el ahorro."""
         phone = "+523129990004"
         # 1. Dar de alta y simular una predicción
-        self.use_case.process_message(phone, "ACEPTO")
+        vendor = Vendor(
+            phone=phone,
+            latitude=19.43,
+            longitude=-99.13,
+            inventory_category="seafood",
+            registration_timestamp=time.time(),
+            rate_limit_last_update=time.time(),
+            opt_in=True,
+            name="Tío Chucho",
+            age=45,
+            business_years=10.0
+        )
+        self.repo.save(vendor)
         self.use_case.process_message(phone, "vendo pescado en lat 19.43 lon -99.13")
         
         # 2. Responder "acierto"
@@ -338,11 +367,12 @@ class TestMermaCeroSystem(unittest.TestCase):
         # Verificar estado persistido
         vendor = self.repo.get_by_phone(phone)
         # La última predicción de tipo 'inbound_request' debe tener 'prediction_accurate' = True
-        last_log = vendor.message_history[-1] # El último log es la predicción
-        self.assertEqual(last_log["type"], "inbound_request")
-        self.assertTrue(last_log["prediction_accurate"])
-        self.assertIn("saved_cost_estimated", last_log["metrics"])
-        self.assertGreaterEqual(last_log["metrics"]["saved_cost_estimated"], 0.0)
+        last_log = vendor.message_history[-1] # El último log es el feedback o la predicción
+        # Buscamos la última consulta de predicción para verificar el flag
+        inbound_logs = [log for log in vendor.message_history if log.get("type") == "inbound_request"]
+        self.assertTrue(inbound_logs[-1]["prediction_accurate"])
+        self.assertIn("saved_cost_estimated", inbound_logs[-1]["metrics"])
+        self.assertGreaterEqual(inbound_logs[-1]["metrics"]["saved_cost_estimated"], 0.0)
 
     def test_telegram_routing_adapter(self) -> None:
         """Verifica que el enrutador de mensajería distinga y dirija correctamente a Telegram o WhatsApp."""
@@ -377,6 +407,11 @@ class TestMermaCeroSystem(unittest.TestCase):
         accept_resp = self.use_case.process_message(telegram_id, "ACEPTO")
         self.assertIn("Has activado Merma Cero", accept_resp)
         
+        # Completar registro
+        self.use_case.process_message(telegram_id, "Tío Chucho")
+        self.use_case.process_message(telegram_id, "45")
+        self.use_case.process_message(telegram_id, "10")
+        
         # Solicitar predicción
         pred_resp = self.use_case.process_message(telegram_id, "vendo flores en lat 19.00 lon -104.00")
         self.assertIn("Flores y Plantas", pred_resp)
@@ -389,6 +424,8 @@ class TestMermaCeroSystem(unittest.TestCase):
         self.assertEqual(vendor.inventory_category, "flowers")
         self.assertEqual(vendor.latitude, 19.00)
         self.assertEqual(vendor.longitude, -104.00)
+        self.assertEqual(vendor.age, 45)
+        self.assertEqual(vendor.business_years, 10.0)
 
     def test_send_fortnightly_survey(self) -> None:
         """Verifica el envío de la encuesta quincenal a usuarios con opt-in activo."""
@@ -402,7 +439,10 @@ class TestMermaCeroSystem(unittest.TestCase):
             inventory_category="seafood",
             registration_timestamp=time.time(),
             rate_limit_last_update=time.time(),
-            opt_in=True
+            opt_in=True,
+            name="Tío Chucho",
+            age=45,
+            business_years=10.0
         )
         vendor2 = Vendor(
             phone=phone_no_optin,
@@ -411,7 +451,10 @@ class TestMermaCeroSystem(unittest.TestCase):
             inventory_category="dairy",
             registration_timestamp=time.time(),
             rate_limit_last_update=time.time(),
-            opt_in=False
+            opt_in=False,
+            name="Tío Chucho",
+            age=45,
+            business_years=10.0
         )
         self.repo.save(vendor1)
         self.repo.save(vendor2)
@@ -439,7 +482,10 @@ class TestMermaCeroSystem(unittest.TestCase):
             inventory_category="flowers",
             registration_timestamp=time.time(),
             rate_limit_last_update=time.time(),
-            opt_in=True
+            opt_in=True,
+            name="Tío Chucho",
+            age=45,
+            business_years=10.0
         )
         self.repo.save(vendor)
         
@@ -479,7 +525,10 @@ class TestMermaCeroSystem(unittest.TestCase):
             inventory_category="dairy",
             registration_timestamp=time.time(),
             rate_limit_last_update=time.time(),
-            opt_in=True
+            opt_in=True,
+            name="Tío Chucho",
+            age=45,
+            business_years=10.0
         )
         self.repo.save(vendor)
         

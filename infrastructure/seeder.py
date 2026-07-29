@@ -300,9 +300,13 @@ def seed_database(repo: VendorRepositoryPort) -> None:
         # Serializar el historial de mensajes
         history_json = json.dumps(message_history, ensure_ascii=False)
 
+        # Generar edad y antigüedad del negocio simulados
+        seed_age = random.randint(19, 68)
+        seed_business_years = float(random.randint(1, min(seed_age - 18, 35)))
+
         # 5. Agregar registro a la lista de inserción masiva
         # Los campos en orden para la consulta SQL:
-        # phone, latitude, longitude, inventory_category, registration_timestamp, rate_limit_tokens, rate_limit_last_update, message_history, opt_in, name, address, is_simulated
+        # phone, latitude, longitude, inventory_category, registration_timestamp, rate_limit_tokens, rate_limit_last_update, message_history, opt_in, name, address, is_simulated, age, business_years
         data_to_insert.append((
             phone,
             lat,
@@ -315,7 +319,9 @@ def seed_database(repo: VendorRepositoryPort) -> None:
             1,                 # opt_in (True para todos los pre-sembrados con interacciones)
             name,              # name
             market["name"],    # address
-            1                  # is_simulated
+            1,                 # is_simulated
+            seed_age,          # age
+            seed_business_years # business_years
         ))
 
     # 6. Guardar registros en masa de manera transaccional y optimizada en SQLite
@@ -329,8 +335,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
                     INSERT OR REPLACE INTO vendors (
                         phone, latitude, longitude, inventory_category, 
                         registration_timestamp, rate_limit_tokens, 
-                        rate_limit_last_update, message_history, opt_in, name, address, is_simulated
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        rate_limit_last_update, message_history, opt_in, name, address, is_simulated, age, business_years
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, data_to_insert)
                 conn.commit()
             except Exception as e:
@@ -355,7 +361,9 @@ def seed_database(repo: VendorRepositoryPort) -> None:
                     opt_in=bool(item[8]),
                     name=item[9],
                     address=item[10],
-                    is_simulated=bool(item[11])
+                    is_simulated=bool(item[11]),
+                    age=item[12],
+                    business_years=item[13]
                 )
                 repo.save(vendor_obj)
         except Exception as e:

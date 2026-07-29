@@ -46,8 +46,8 @@ class OraculoUseCase:
         address = self._parse_address(text)
 
         if vendor:
-            # Si ya existe y nos llega un nombre válido mientras el actual es genérico, lo actualizamos
-            if sender_name and vendor.name == "Comerciante Anónimo":
+            # Si ya existe y nos llega un nombre válido mientras el actual es genérico (y no estamos en registro conversacional)
+            if sender_name and vendor.name == "Comerciante Anónimo" and not vendor.message_history:
                 vendor.name = sender_name
                 self.repository.save(vendor)
         else:
@@ -71,16 +71,25 @@ class OraculoUseCase:
                 rate_limit_last_update=now,
                 opt_in=is_accepting,
                 name=inferred_name,
-                address=inferred_address
+                address=inferred_address,
+                is_simulated=False,
+                age=None,
+                business_years=None
             )
             self.repository.save(vendor)
             
             if is_accepting:
                 welcome_msg = (
                     "¡Excelente! Has activado Merma Cero. 🚀\n\n"
-                    "Para poder darte recomendaciones de compra exactas y cuidar tu dinero, dime qué vendes (pescado, flores, verduras, lácteos) y tu ubicación escribiendo algo como:\n"
-                    "*vendo pescado en Colima* o *vendo verduras en el mercado de Tepito CDMX*"
+                    "Para registrar tu perfil en la base de datos, por favor dime tu nombre o el nombre de tu negocio:"
                 )
+                vendor.message_history.append({
+                    "timestamp": now,
+                    "type": "registration_step",
+                    "step": "ask_name",
+                    "message_sent": welcome_msg
+                })
+                self.repository.save(vendor)
                 self.message_sender.send_message(phone, welcome_msg)
                 return welcome_msg
             else:
@@ -96,12 +105,17 @@ class OraculoUseCase:
         if not vendor.opt_in:
             if text_clean == "acepto":
                 vendor.opt_in = True
-                self.repository.save(vendor)
                 welcome_msg = (
                     "¡Excelente! Has activado Merma Cero. 🚀\n\n"
-                    "Para poder darte recomendaciones de compra exactas y cuidar tu dinero, dime qué vendes (pescado, flores, verduras, lácteos) y tu ubicación escribiendo algo como:\n"
-                    "*vendo pescado en Colima* o *vendo verduras en el mercado de Tepito CDMX*"
+                    "Para registrar tu perfil en la base de datos, por favor dime tu nombre o el nombre de tu negocio:"
                 )
+                vendor.message_history.append({
+                    "timestamp": now,
+                    "type": "registration_step",
+                    "step": "ask_name",
+                    "message_sent": welcome_msg
+                })
+                self.repository.save(vendor)
                 self.message_sender.send_message(phone, welcome_msg)
                 return welcome_msg
             else:
@@ -110,6 +124,107 @@ class OraculoUseCase:
                 )
                 self.message_sender.send_message(phone, optin_msg)
                 return optin_msg
+
+        # Si ya tiene opt_in, comprobar el paso de registro en el que se encuentra
+        last_reg_step = None
+        for log in reversed(vendor.message_history):
+            if isinstance(log, dict) and log.get("type") == "registration_step":
+                last_reg_step = log.get("step")
+                break
+
+        if last_reg_step == "ask_name":
+            vendor.name = text.strip()
+            msg = f"¡Un gusto, {vendor.name}! Ahora dime, ¿cuántos años tienes? (Escribe solo el número, ej. 25):"
+            vendor.message_history.append({
+                "timestamp": now,
+                "type": "registration_step",
+                "step": "ask_age",
+                "message_sent": msg
+            })
+            self.repository.save(vendor)
+            self.message_sender.send_message(phone, msg)
+            return msg
+
+        elif last_reg_step == "ask_age":
+            num_match = re.search(r"\d+", text_clean)
+            if num_match:
+                age = int(num_match.group(0))
+                if 5 <= age <= 100:
+                    vendor.age = age
+                    msg = f"Entendido, {age} años. ¿Cuánto tiempo llevas con tu negocio? (escribe solo el número en años, ej. 3, o 1.5):"
+                    vendor.message_history.append({
+                        "timestamp": now,
+                        "type": "registration_step",
+                        "step": "ask_business_years",
+                        "message_sent": msg
+                    })
+                    self.repository.save(vendor)
+                    self.message_sender.send_message(phone, msg)
+                    return msg
+            
+            err_msg = "Por favor, dime tu edad usando números válidos entre 5 y 100 años (ej. 28):"
+            self.message_sender.send_message(phone, err_msg)
+            return err_msg
+
+        elif last_reg_step == "ask_business_years":
+            num_match = re.search(r"\d+(?:\.\d+)?", text_clean)
+            if num_match:
+                years = float(num_match.group(0))
+                if 0 <= years <= 80:
+                    vendor.business_years = years
+                    msg = (
+                        "¡Registro completado con éxito! 🎉\n\n"
+                        "Ahora dime qué vendes y tu ubicación escribiendo algo como:\n"
+                        "*vendo pescado en Colima* o *vendo verduras en el mercado de Tepito CDMX*"
+                    )
+                    vendor.message_history.append({
+                        "timestamp": now,
+                        "type": "registration_step",
+                        "step": "complete",
+                        "message_sent": msg
+                    })
+                    self.repository.save(vendor)
+                    self.message_sender.send_message(phone, msg)
+                    return msg
+            
+            err_msg = "Por favor, escribe cuántos años llevas con tu negocio usando números (ej. 5 o 1.5):"
+            self.message_sender.send_message(phone, err_msg)
+            return err_msg
+
+        # Autocuración / Soporte de registro para usuarios existentes sin datos completos
+        if vendor.name == "Comerciante Anónimo":
+            msg = "Para completar tu registro en la base de datos de resiliencia, por favor dime tu nombre o el nombre de tu negocio:"
+            vendor.message_history.append({
+                "timestamp": now,
+                "type": "registration_step",
+                "step": "ask_name",
+                "message_sent": msg
+            })
+            self.repository.save(vendor)
+            self.message_sender.send_message(phone, msg)
+            return msg
+        elif vendor.age is None:
+            msg = "Para completar tu registro, por favor dime tu edad (ej. 30):"
+            vendor.message_history.append({
+                "timestamp": now,
+                "type": "registration_step",
+                "step": "ask_age",
+                "message_sent": msg
+            })
+            self.repository.save(vendor)
+            self.message_sender.send_message(phone, msg)
+            return msg
+        elif vendor.business_years is None:
+            msg = "Para completar tu registro, por favor dime cuántos años llevas con tu negocio (ej. 3):"
+            vendor.message_history.append({
+                "timestamp": now,
+                "type": "registration_step",
+                "step": "ask_business_years",
+                "message_sent": msg
+            })
+            self.repository.save(vendor)
+            self.message_sender.send_message(phone, msg)
+            return msg
 
         # Parsear respuesta a la encuesta quincenal de impacto si aplica
         if vendor.message_history:

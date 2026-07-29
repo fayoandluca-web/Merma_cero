@@ -52,6 +52,8 @@ class Vendor(BaseModel):
     name: str = Field("Comerciante Anónimo", description="Nombre del comerciante o de su negocio")
     address: str = Field("Colima, México", description="Ubicación o dirección textual del puesto")
     is_simulated: bool = Field(False, description="Flag que indica si es un registro simulado o semilla")
+    age: Optional[int] = Field(None, description="Edad del comerciante")
+    business_years: Optional[float] = Field(None, description="Tiempo en años que lleva con el negocio")
 
 
 

@@ -374,7 +374,7 @@ def trigger_fortnightly_survey(response: Response):
         return {"status": "error", "message": "Fallo interno al enviar encuestas."}
 
 @app.get("/api/vendors", status_code=status.HTTP_200_OK)
-def get_vendors_api():
+def get_vendors_api(show_simulated: bool = False):
     """Retorna la lista de todos los vendedores registrados con opt-in activo para pintar en el mapa interactivo."""
     try:
         vendors = repo.get_all()
@@ -389,7 +389,7 @@ def get_vendors_api():
                 "registration_timestamp": float(vendor.registration_timestamp),
                 "address": vendor.address
             }
-            for vendor in vendors if vendor.opt_in and not vendor.is_simulated
+            for vendor in vendors if vendor.opt_in and (show_simulated or not vendor.is_simulated)
         ]
     except Exception as e:
         log_json(
@@ -400,11 +400,11 @@ def get_vendors_api():
         return []
 
 @app.get("/api/stats", status_code=status.HTTP_200_OK)
-def get_stats_api():
-    """Retorna las estadísticas acumuladas en tiempo real de los comerciantes registrados reales."""
+def get_stats_api(show_simulated: bool = False):
+    """Retorna las estadísticas acumuladas en tiempo real de los comerciantes registrados reales o simulados."""
     try:
         vendors = repo.get_all()
-        real_vendors = [v for v in vendors if v.opt_in and not v.is_simulated]
+        real_vendors = [v for v in vendors if v.opt_in and (show_simulated or not v.is_simulated)]
         
         # 1. Total comerciantes
         total_merchants = len(real_vendors)

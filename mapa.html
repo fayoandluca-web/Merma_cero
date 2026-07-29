@@ -288,6 +288,16 @@
                     </div>
                 </header>
 
+                <!-- Selector de Red -->
+                <div style="margin-bottom: 2rem; display: flex; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px; background-color: var(--surface);">
+                    <button id="toggle-real" onclick="setNetworkMode(false)" style="flex: 1; border: none; padding: 0.5rem; font-size: 0.8rem; font-weight: 700; border-radius: 3px; cursor: pointer; background-color: var(--primary); color: var(--bg-color); transition: all 0.2s ease; font-family: inherit;">
+                        Red Real
+                    </button>
+                    <button id="toggle-sim" onclick="setNetworkMode(true)" style="flex: 1; border: none; padding: 0.5rem; font-size: 0.8rem; font-weight: 700; border-radius: 3px; cursor: pointer; background-color: transparent; color: var(--text-muted); transition: all 0.2s ease; font-family: inherit;">
+                        Simulación (1,000)
+                    </button>
+                </div>
+
                 <div class="stats-section">
                     <!-- Widget 1: Ahorro Total -->
                     <div class="widget">
@@ -372,10 +382,33 @@
             generic: 'Mercancía General'
         };
 
+        var showSimulated = false;
+
+        function setNetworkMode(val) {
+            showSimulated = val;
+            
+            var btnReal = document.getElementById('toggle-real');
+            var btnSim = document.getElementById('toggle-sim');
+            
+            if (showSimulated) {
+                btnReal.style.backgroundColor = 'transparent';
+                btnReal.style.color = 'var(--text-muted)';
+                btnSim.style.backgroundColor = 'var(--primary)';
+                btnSim.style.color = 'var(--bg-color)';
+            } else {
+                btnReal.style.backgroundColor = 'var(--primary)';
+                btnReal.style.color = 'var(--bg-color)';
+                btnSim.style.backgroundColor = 'transparent';
+                btnSim.style.color = 'var(--text-muted)';
+            }
+            
+            updateDashboardData();
+        }
+
         // Función para actualizar datos y estadísticas de forma síncrona
         function updateDashboardData() {
-            // 1. Cargar estadísticas agregadas reales
-            fetch('/api/stats')
+            // 1. Cargar estadísticas agregadas reales o simuladas
+            fetch('/api/stats?show_simulated=' + showSimulated)
                 .then(function(res) { return res.json(); })
                 .then(function(stats) {
                     document.getElementById('stat-savings').textContent = Number(stats.total_savings).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -419,7 +452,7 @@
                 });
 
             // 2. Cargar y pintar comerciantes reales en el mapa
-            fetch('/api/vendors')
+            fetch('/api/vendors?show_simulated=' + showSimulated)
                 .then(function(res) { return res.json(); })
                 .then(function(vendors) {
                     markersGroup.clearLayers();
