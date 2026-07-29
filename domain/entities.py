@@ -49,6 +49,7 @@ class Vendor(BaseModel):
     rate_limit_last_update: float = Field(..., description="Última actualización de tokens de rate limiting")
     message_history: List[dict] = Field(default_factory=list, description="Historial de mensajes y recomendaciones de la IA")
     opt_in: bool = Field(False, description="Consentimiento explícito de opt-in de WhatsApp")
+    name: str = Field("Comerciante Anónimo", description="Nombre del comerciante o de su negocio")
 
 
 

@@ -54,6 +54,11 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                 except sqlite3.OperationalError:
                     # La columna ya existe, omitir
                     pass
+                try:
+                    cursor.execute("ALTER TABLE vendors ADD COLUMN name TEXT DEFAULT 'Comerciante Anónimo'")
+                except sqlite3.OperationalError:
+                    # La columna ya existe, omitir
+                    pass
                 conn.commit()
             finally:
                 conn.close()
@@ -67,7 +72,7 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                 cursor.execute("""
                     SELECT phone, latitude, longitude, inventory_category, 
                            registration_timestamp, rate_limit_tokens, 
-                           rate_limit_last_update, message_history, opt_in 
+                           rate_limit_last_update, message_history, opt_in, name 
                     FROM vendors WHERE phone = ?
                 """, (phone,))
                 row = cursor.fetchone()
@@ -77,8 +82,9 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                 # Deserializar el historial de mensajes
                 history = json.loads(row[7])
                 
-                # Manejar compatibilidad si opt_in no está en la base de datos (por si acaso)
+                # Manejar compatibilidad si opt_in/name no están en la base de datos (por si acaso)
                 opt_in_val = bool(row[8]) if len(row) > 8 else False
+                name_val = row[9] if len(row) > 9 else "Comerciante Anónimo"
                 
                 return Vendor(
                     phone=row[0],
@@ -89,7 +95,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                     rate_limit_tokens=row[5],
                     rate_limit_last_update=row[6],
                     message_history=history,
-                    opt_in=opt_in_val
+                    opt_in=opt_in_val,
+                    name=name_val
                 )
             except Exception:
                 # En caso de fallo (ej. base de datos vacía o corrupta), retornamos None para auto-recuperación
@@ -109,8 +116,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                     INSERT INTO vendors (
                         phone, latitude, longitude, inventory_category, 
                         registration_timestamp, rate_limit_tokens, 
-                        rate_limit_last_update, message_history, opt_in
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        rate_limit_last_update, message_history, opt_in, name
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(phone) DO UPDATE SET
                         latitude=excluded.latitude,
                         longitude=excluded.longitude,
@@ -118,7 +125,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                         rate_limit_tokens=excluded.rate_limit_tokens,
                         rate_limit_last_update=excluded.rate_limit_last_update,
                         message_history=excluded.message_history,
-                        opt_in=excluded.opt_in
+                        opt_in=excluded.opt_in,
+                        name=excluded.name
                 """, (
                     vendor.phone,
                     vendor.latitude,
@@ -128,7 +136,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                     vendor.rate_limit_tokens,
                     vendor.rate_limit_last_update,
                     history_json,
-                    1 if vendor.opt_in else 0
+                    1 if vendor.opt_in else 0,
+                    vendor.name
                 ))
                 conn.commit()
             except Exception as e:
@@ -147,13 +156,14 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                 cursor.execute("""
                     SELECT phone, latitude, longitude, inventory_category, 
                            registration_timestamp, rate_limit_tokens, 
-                           rate_limit_last_update, message_history, opt_in 
+                           rate_limit_last_update, message_history, opt_in, name 
                     FROM vendors
                 """)
                 rows = cursor.fetchall()
                 for row in rows:
                     history = json.loads(row[7])
                     opt_in_val = bool(row[8]) if len(row) > 8 else False
+                    name_val = row[9] if len(row) > 9 else "Comerciante Anónimo"
                     vendors.append(Vendor(
                         phone=row[0],
                         latitude=row[1],
@@ -163,7 +173,8 @@ class SQLiteVendorRepository(VendorRepositoryPort):
                         rate_limit_tokens=row[5],
                         rate_limit_last_update=row[6],
                         message_history=history,
-                        opt_in=opt_in_val
+                        opt_in=opt_in_val,
+                        name=name_val
                     ))
             finally:
                 conn.close()

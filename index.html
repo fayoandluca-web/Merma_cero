@@ -11,6 +11,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <style>
         /* Modern Minimalist Design (B&W) */
         :root {
@@ -447,6 +451,47 @@
         .whatsapp-cta:hover {
             background: #27272a;
         }
+
+        /* Map Styles */
+        #map {
+            width: 100%;
+            height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        /* Customize Leaflet styles to match our clean B&W theme */
+        .leaflet-container {
+            font-family: inherit;
+            background: #f4f4f5 !important;
+        }
+        .leaflet-bar {
+            border: 1px solid var(--border-dark) !important;
+            box-shadow: none !important;
+            border-radius: 4px !important;
+            overflow: hidden;
+        }
+        .leaflet-bar a {
+            background-color: #fff !important;
+            color: var(--text) !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            transition: background-color 0.2s;
+        }
+        .leaflet-bar a:hover {
+            background-color: #f4f4f5 !important;
+        }
+        .leaflet-popup-content-wrapper {
+            background: #ffffff !important;
+            color: var(--text) !important;
+            border-radius: 4px !important;
+            border: 1px solid var(--border-dark) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+        .leaflet-popup-tip {
+            background: #ffffff !important;
+            border: 1px solid var(--border-dark) !important;
+        }
     </style>
 </head>
 <body>
@@ -573,6 +618,15 @@
                 <p>La idea se originó al presenciar las pérdidas constantes por calor en el puesto de frutas y verduras de su <strong>tío Chucho en el tianguis de Colima</strong>.</p>
                 <p>Conectando la física de degradación molecular de alimentos con la optimización de carteras financieras usada en Wall Street, Fabio creó este oráculo para aportar una herramienta real de justicia tecnológica al comercio local.</p>
             </div>
+        </section>
+
+        <!-- Map Section -->
+        <section id="map-section" style="margin-bottom: 4rem;">
+            <h2 class="section-title">📍 Red de Resiliencia Climática</h2>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">
+                Nuestros algoritmos actúan en tiempo real protegiendo el flujo de caja del comercio local. Este mapa interactivo muestra la ubicación, el giro y el nombre de los comerciantes activos que forman parte de la red de protección del Oráculo Merma Cero en la República Mexicana.
+            </p>
+            <div id="map"></div>
         </section>
 
         <!-- Scientific / Math Section -->
@@ -785,9 +839,70 @@
             ctx.fillText('100% merma', w - padding - 65, h - 5);
         }
 
+        // Inicializar el mapa interactivo de México
+        function initInteractiveMap() {
+            var map = L.map('map', {
+                scrollWheelZoom: false
+            }).setView([23.6345, -102.5528], 5);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            var categoryIcons = {
+                seafood: '🐟',
+                flowers: '🌸',
+                fruit_vegetables: '🥦',
+                dairy: '🧀',
+                generic: '📦'
+            };
+
+            var categoryNames = {
+                seafood: 'Pescados y Mariscos',
+                flowers: 'Flores y Plantas',
+                fruit_vegetables: 'Frutas y Verduras',
+                dairy: 'Lácteos y Quesos',
+                generic: 'Mercancía General'
+            };
+
+            fetch('/api/vendors')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    data.forEach(function(vendor) {
+                        var iconChar = categoryIcons[vendor.inventory_category] || '📦';
+                        var catName = categoryNames[vendor.inventory_category] || 'Mercancía General';
+                        
+                        var customDivIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: '<div style="font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.25);">' + iconChar + '</div>',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        });
+
+                        var popupContent = `
+                            <div style="font-size: 0.9rem; line-height: 1.4; color: var(--text);">
+                                <strong style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text); display: block; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; margin-bottom: 6px;">${vendor.name}</strong>
+                                <span style="color: var(--text-muted);">Giro:</span> <b>${iconChar} ${catName}</b><br>
+                                <span style="color: var(--text-muted);">Ubicación:</span> <code>${vendor.latitude.toFixed(4)}, ${vendor.longitude.toFixed(4)}</code>
+                            </div>
+                        `;
+
+                        L.marker([vendor.latitude, vendor.longitude], { icon: customDivIcon })
+                            .bindPopup(popupContent)
+                            .addTo(map);
+                    });
+                })
+                .catch(function(err) {
+                    console.error("Error al obtener los comerciantes del mapa:", err);
+                });
+        }
+
         // Ejecutar simulación inicial al cargar
         window.onload = function() {
             runSimulation();
+            initInteractiveMap();
         }
     </script>
 </body>

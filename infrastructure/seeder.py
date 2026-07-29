@@ -160,9 +160,28 @@ def seed_database(repo: VendorRepositoryPort) -> None:
         
         phone = f"+52{area}{phone_num}"
 
-        # 3. Categoría y registro de tiempo inicial
+        # 3. Categoría, nombre del negocio y registro de tiempo inicial
         category = random.choice(categories)
         registration_timestamp = now_ts - random.randint(15, 60) * 86400
+        
+        # Generar nombre de negocio auténtico mexicano
+        FIRST_NAMES = ["Juan", "María", "Pedro", "Luisa", "Carlos", "José", "Guadalupe", "Francisco", "Ana", "Miguel", "Lucía", "Antonio", "Rosa", "Jorge", "Felipe", "Manuel", "Juana", "Roberto", "Elena", "Silvia"]
+        LAST_NAMES = ["Pérez", "Gómez", "Rodríguez", "Hernández", "Sánchez", "Martínez", "López", "González", "Díaz", "Flores", "Cruz", "García", "Morales", "Ramírez", "Reyes", "Ruiz", "Ortega", "Castillo", "Chávez", "Rivera"]
+        fn = random.choice(FIRST_NAMES)
+        ln = random.choice(LAST_NAMES)
+        prefix = random.choice(["Don", "Doña", "Puesto de", "El Rincón de"])
+        cat_es_short = {
+            "seafood": random.choice(["Mariscos", "Pescadería", "Coctelería"]),
+            "flowers": random.choice(["Florería", "Plantas", "Arreglos"]),
+            "fruit_vegetables": random.choice(["Frutería", "Verduras", "Recaudería"]),
+            "dairy": random.choice(["Cremería", "Quesos", "Lácteos"]),
+            "generic": random.choice(["Novedades", "Variedades", "Mercancías"])
+        }.get(category, "Comercio")
+        
+        if prefix in ["Don", "Doña"]:
+            name = f"{cat_es_short} {prefix} {fn}"
+        else:
+            name = f"{prefix} {fn} {ln}"
 
         # 4. Generar historial de mensajes (2 a 5 interacciones)
         num_interactions = random.randint(2, 5)
@@ -267,7 +286,7 @@ def seed_database(repo: VendorRepositoryPort) -> None:
 
         # 5. Agregar registro a la lista de inserción masiva
         # Los campos en orden para la consulta SQL:
-        # phone, latitude, longitude, inventory_category, registration_timestamp, rate_limit_tokens, rate_limit_last_update, message_history, opt_in
+        # phone, latitude, longitude, inventory_category, registration_timestamp, rate_limit_tokens, rate_limit_last_update, message_history, opt_in, name
         data_to_insert.append((
             phone,
             lat,
@@ -277,7 +296,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
             10.0,              # rate_limit_tokens
             float(now_ts),     # rate_limit_last_update
             history_json,
-            1                  # opt_in (True para todos los pre-sembrados con interacciones)
+            1,                 # opt_in (True para todos los pre-sembrados con interacciones)
+            name               # name
         ))
 
     # 6. Guardar registros en masa de manera transaccional y optimizada en SQLite
@@ -292,8 +312,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
                     INSERT OR REPLACE INTO vendors (
                         phone, latitude, longitude, inventory_category, 
                         registration_timestamp, rate_limit_tokens, 
-                        rate_limit_last_update, message_history, opt_in
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        rate_limit_last_update, message_history, opt_in, name
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, data_to_insert)
                 conn.commit()
             except Exception as e:
@@ -315,7 +335,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
                     rate_limit_tokens=item[5],
                     rate_limit_last_update=item[6],
                     message_history=json.loads(item[7]),
-                    opt_in=bool(item[8])
+                    opt_in=bool(item[8]),
+                    name=item[9]
                 )
                 repo.save(vendor_obj)
         except Exception as e:

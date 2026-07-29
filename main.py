@@ -267,15 +267,23 @@ async def process_telegram_webhook(update: TelegramUpdate, response: Response):
         if len(text_str) > 500:
             raise InvalidInputError("Mensaje demasiado largo.")
             
+        # Extraer nombre del remitente de Telegram
+        from_user = msg.get("from", {})
+        first_name = from_user.get("first_name")
+        last_name = from_user.get("last_name")
+        sender_name = None
+        if first_name:
+            sender_name = f"{first_name} {last_name}".strip() if last_name else first_name
+            
         log_json(
             severity="INFO",
             message="Petición recibida desde Telegram",
-            context={"chat_id": chat_id},
+            context={"chat_id": chat_id, "sender_name": sender_name},
             trace_id=trace_id
         )
         
         # Procesar la conversación de forma transparente
-        response_text = oraculo.process_message(recipient_id, text_str)
+        response_text = oraculo.process_message(recipient_id, text_str, sender_name=sender_name)
         
         log_json(
             severity="INFO",
@@ -364,6 +372,31 @@ def trigger_fortnightly_survey(response: Response):
         )
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"status": "error", "message": "Fallo interno al enviar encuestas."}
+
+@app.get("/api/vendors", status_code=status.HTTP_200_OK)
+def get_vendors_api():
+    """Retorna la lista de todos los vendedores registrados con opt-in activo para pintar en el mapa interactivo."""
+    try:
+        vendors = repo.get_all()
+        # Retornamos solo datos públicos necesarios para el mapa (por seguridad/privacidad omitimos el teléfono completo,
+        # mostrando solo los últimos dígitos o un hash, o directamente omitimos el campo teléfono para proteger privacidad)
+        return [
+            {
+                "name": vendor.name,
+                "latitude": float(vendor.latitude),
+                "longitude": float(vendor.longitude),
+                "inventory_category": vendor.inventory_category,
+                "registration_timestamp": float(vendor.registration_timestamp)
+            }
+            for vendor in vendors if vendor.opt_in
+        ]
+    except Exception as e:
+        log_json(
+            severity="ERROR",
+            message="Fallo al obtener vendedores para la API del mapa",
+            context={"error": str(e)}
+        )
+        return []
 
 _cached_index_html = None
 
@@ -468,9 +501,10 @@ async def process_webhook_message(request: Request, response: Response):
         response.status_code = status.HTTP_400_BAD_REQUEST
         return {"status": "error", "message": "Cuerpo de petición malformado."}
 
-    # 2. Extraer teléfono y texto con soporte para Twilio, Meta y formato plano
+    # 2. Extraer teléfono, texto y nombre con soporte para Twilio, Meta y formato plano
     phone = None
     text = None
+    sender_name = None
     
     try:
         # Verificar si es la estructura de Twilio
@@ -482,6 +516,7 @@ async def process_webhook_message(request: Request, response: Response):
             else:
                 phone = from_val
             text = payload.get("Body")
+            sender_name = payload.get("ProfileName")
             
         # Verificar si es la estructura de Meta (WhatsApp Cloud API)
         elif "object" in payload and "entry" in payload:
@@ -497,10 +532,15 @@ async def process_webhook_message(request: Request, response: Response):
                         # Extraer solo si el mensaje es de tipo texto
                         if msg.get("type") == "text":
                             text = msg.get("text", {}).get("body")
+                    
+                    contacts = value.get("contacts", [])
+                    if contacts and isinstance(contacts, list):
+                        sender_name = contacts[0].get("profile", {}).get("name")
         else:
             # Formato plano de compatibilidad (Swagger / CLI / Simulador)
             phone = payload.get("phone")
             text = payload.get("text")
+            sender_name = payload.get("name")
             
         # Si no es un mensaje procesable (ej. notificaciones de lectura, entrega, etc.), retornar 200 y terminar
         if not phone or not text:
@@ -529,12 +569,12 @@ async def process_webhook_message(request: Request, response: Response):
         log_json(
             severity="INFO",
             message="Petición recibida en webhook",
-            context={"phone": phone_str},
+            context={"phone": phone_str, "sender_name": sender_name},
             trace_id=trace_id
         )
 
         # Procesar caso de uso conversacional asíncrono
-        response_text = oraculo.process_message(phone_str, text_str)
+        response_text = oraculo.process_message(phone_str, text_str, sender_name=sender_name)
         
         log_json(
             severity="INFO",

@@ -23,7 +23,7 @@ class OraculoUseCase:
         self.message_sender = message_sender
         self.ai_service = ai_service
 
-    def process_message(self, phone: str, text: str) -> str:
+    def process_message(self, phone: str, text: str, sender_name: Optional[str] = None) -> str:
         """Procesa una solicitud entrante por WhatsApp de forma determinista y sin fricciones.
         
         Flujo de control:
@@ -45,13 +45,19 @@ class OraculoUseCase:
         category = self._parse_category(text)
         coords = self._parse_coordinates(text)
 
-        if not vendor:
+        if vendor:
+            # Si ya existe y nos llega un nombre válido mientras el actual es genérico, lo actualizamos
+            if sender_name and vendor.name == "Comerciante Anónimo":
+                vendor.name = sender_name
+                self.repository.save(vendor)
+        else:
             # Registro implícito inicial (Ley de Falkland) con opt_in=False por defecto
             inferred_cat = category if category else "generic"
             lat = coords[0] if coords else 19.4326  # CDMX por defecto si no hay dato
             lon = coords[1] if coords else -99.1332
             
             is_accepting = text_clean == "acepto"
+            inferred_name = sender_name if sender_name else "Comerciante Anónimo"
             vendor = Vendor(
                 phone=phone,
                 latitude=lat,
@@ -60,7 +66,8 @@ class OraculoUseCase:
                 registration_timestamp=now,
                 rate_limit_tokens=float(RATE_LIMIT_MAX_TOKENS) - 1.0,
                 rate_limit_last_update=now,
-                opt_in=is_accepting
+                opt_in=is_accepting,
+                name=inferred_name
             )
             self.repository.save(vendor)
             
