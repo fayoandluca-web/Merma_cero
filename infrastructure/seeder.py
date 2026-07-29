@@ -43,7 +43,7 @@ def seed_database(repo: VendorRepositoryPort) -> None:
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM vendors")
             count: int = cursor.fetchone()[0]
-            is_empty = (count == 0)
+            is_empty = (count < 10)
         except Exception:
             # Si hay algún problema, por ejemplo, que la tabla no esté inicializada
             is_empty = True
@@ -53,7 +53,7 @@ def seed_database(repo: VendorRepositoryPort) -> None:
         # Fallback para otros repositorios (ej. JSONVendorRepository)
         try:
             all_vendors = repo.get_all()
-            is_empty = (len(all_vendors) == 0)
+            is_empty = (len(all_vendors) < 10)
         except Exception:
             is_empty = True
 

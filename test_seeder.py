@@ -109,26 +109,26 @@ class TestSeederSystem(unittest.TestCase):
     # =========================================================================
 
     def test_seeder_does_not_overwrite_if_already_populated(self) -> None:
-        """Verifica que si la base de datos ya contiene al menos un registro, el seeder no haga nada."""
-        # Insertar un vendedor dummy para que no esté vacía
-        dummy_vendor = Vendor(
-            phone="+525500000000",
-            latitude=19.43,
-            longitude=-99.13,
-            inventory_category="generic",
-            registration_timestamp=time.time(),
-            rate_limit_last_update=time.time(),
-            opt_in=True
-        )
-        self.repo.save(dummy_vendor)
+        """Verifica que si la base de datos ya contiene al menos un registro (en este caso 10), el seeder no haga nada."""
+        # Insertar 10 vendedores dummy para que no esté vacía
+        for idx in range(10):
+            dummy_vendor = Vendor(
+                phone=f"+52550000000{idx}",
+                latitude=19.43,
+                longitude=-99.13,
+                inventory_category="generic",
+                registration_timestamp=time.time(),
+                rate_limit_last_update=time.time(),
+                opt_in=True
+            )
+            self.repo.save(dummy_vendor)
 
         # Intentar ejecutar el seeder
         seed_database(self.repo)
 
-        # Verificar que solo exista el vendedor dummy original
+        # Verificar que solo existan los vendedores dummy originales
         vendors = self.repo.get_all()
-        self.assertEqual(len(vendors), 1)
-        self.assertEqual(vendors[0].phone, "+525500000000")
+        self.assertEqual(len(vendors), 10)
 
     def test_seeder_fallback_path(self) -> None:
         """Verifica que el seeder funcione con un repositorio que no sea SQLiteVendorRepository usando el fallback."""
