@@ -477,11 +477,17 @@ def debug_db():
             total_count = cursor.fetchone()[0]
             cursor.execute("SELECT COUNT(*) FROM vendors WHERE is_simulated = 1")
             simulated_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM vendors WHERE opt_in = 1")
+            opt_in_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM vendors WHERE is_simulated = 1 AND opt_in = 1")
+            simulated_opt_in_count = cursor.fetchone()[0]
             cursor.execute("PRAGMA table_info(vendors)")
             columns = cursor.fetchall()
             return {
                 "total_count": total_count,
                 "simulated_count": simulated_count,
+                "opt_in_count": opt_in_count,
+                "simulated_opt_in_count": simulated_opt_in_count,
                 "columns": [c[1] for c in columns]
             }
         except Exception as e:
