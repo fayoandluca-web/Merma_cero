@@ -386,7 +386,8 @@ def get_vendors_api():
                 "latitude": float(vendor.latitude),
                 "longitude": float(vendor.longitude),
                 "inventory_category": vendor.inventory_category,
-                "registration_timestamp": float(vendor.registration_timestamp)
+                "registration_timestamp": float(vendor.registration_timestamp),
+                "address": vendor.address
             }
             for vendor in vendors if vendor.opt_in
         ]

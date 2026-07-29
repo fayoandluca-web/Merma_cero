@@ -43,7 +43,7 @@ class OraculoUseCase:
         
         # Inferencia de parámetros desde el texto (Zero Fricción)
         category = self._parse_category(text)
-        coords = self._parse_coordinates(text)
+        address = self._parse_address(text)
 
         if vendor:
             # Si ya existe y nos llega un nombre válido mientras el actual es genérico, lo actualizamos
@@ -53,8 +53,11 @@ class OraculoUseCase:
         else:
             # Registro implícito inicial (Ley de Falkland) con opt_in=False por defecto
             inferred_cat = category if category else "generic"
-            lat = coords[0] if coords else 19.4326  # CDMX por defecto si no hay dato
-            lon = coords[1] if coords else -99.1332
+            inferred_address = address if address else "Colima, México"
+            
+            # Geocodificar dirección inicial
+            from merma_cero.infrastructure.geocoding import geocode_address
+            lat, lon = geocode_address(inferred_address)
             
             is_accepting = text_clean == "acepto"
             inferred_name = sender_name if sender_name else "Comerciante Anónimo"
@@ -67,7 +70,8 @@ class OraculoUseCase:
                 rate_limit_tokens=float(RATE_LIMIT_MAX_TOKENS) - 1.0,
                 rate_limit_last_update=now,
                 opt_in=is_accepting,
-                name=inferred_name
+                name=inferred_name,
+                address=inferred_address
             )
             self.repository.save(vendor)
             
@@ -75,7 +79,7 @@ class OraculoUseCase:
                 welcome_msg = (
                     "¡Excelente! Has activado Merma Cero. 🚀\n\n"
                     "Para poder darte recomendaciones de compra exactas y cuidar tu dinero, dime qué vendes (pescado, flores, verduras, lácteos) y tu ubicación escribiendo algo como:\n"
-                    "*vendo pescado en lat 19.43 lon -99.13*"
+                    "*vendo pescado en Colima* o *vendo verduras en el mercado de Tepito CDMX*"
                 )
                 self.message_sender.send_message(phone, welcome_msg)
                 return welcome_msg
@@ -96,7 +100,7 @@ class OraculoUseCase:
                 welcome_msg = (
                     "¡Excelente! Has activado Merma Cero. 🚀\n\n"
                     "Para poder darte recomendaciones de compra exactas y cuidar tu dinero, dime qué vendes (pescado, flores, verduras, lácteos) y tu ubicación escribiendo algo como:\n"
-                    "*vendo pescado en lat 19.43 lon -99.13*"
+                    "*vendo pescado en Colima* o *vendo verduras en el mercado de Tepito CDMX*"
                 )
                 self.message_sender.send_message(phone, welcome_msg)
                 return welcome_msg
@@ -185,9 +189,12 @@ class OraculoUseCase:
         if category and category != vendor.inventory_category:
             vendor.inventory_category = category
             updated = True
-        if coords:
-            vendor.latitude = coords[0]
-            vendor.longitude = coords[1]
+        if address:
+            from merma_cero.infrastructure.geocoding import geocode_address
+            lat, lon = geocode_address(address)
+            vendor.address = address
+            vendor.latitude = lat
+            vendor.longitude = lon
             updated = True
         
         self.repository.save(vendor)
@@ -261,19 +268,20 @@ class OraculoUseCase:
                     return category
         return None
 
-    def _parse_coordinates(self, text: str) -> Optional[Tuple[float, float]]:
-        """Busca patrones de coordenadas decimales (latitud, longitud) en el texto."""
-        # Detecta formatos tipo "19.43, -99.13" o "lat 19.43 lon -99.13"
-        pattern = r"(-?\d+\.\d+)(?:\s*,\s*|\s+(?:lon\s+)?)(-?\d+\.\d+)"
-        match = re.search(pattern, text)
+    def _parse_address(self, text: str) -> Optional[str]:
+        """Busca y extrae la dirección textual, soportando también coordenadas lat/lon como dirección."""
+        # 1. Comprobar si tiene el formato "lat X lon Y" o "X, Y"
+        pattern_coords = r"(-?\d+\.\d+)(?:\s*,\s*|\s+(?:lon\s+)?)(-?\d+\.\d+)"
+        match_coords = re.search(pattern_coords, text)
+        if match_coords:
+            # Es una coordenada, retornamos las coordenadas en formato string para que geocode_address las maneje
+            return f"{match_coords.group(1)},{match_coords.group(2)}"
+
+        # 2. Buscar patrón "en [dirección]"
+        match = re.search(r"\ben\s+([^.*#?:\n]{2,100})", text, re.IGNORECASE)
         if match:
-            try:
-                lat = float(match.group(1))
-                lon = float(match.group(2))
-                if -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
-                    return lat, lon
-            except ValueError:
-                pass
+            return match.group(1).strip()
+            
         return None
 
     def _format_response(

@@ -50,6 +50,7 @@ class Vendor(BaseModel):
     message_history: List[dict] = Field(default_factory=list, description="Historial de mensajes y recomendaciones de la IA")
     opt_in: bool = Field(False, description="Consentimiento explícito de opt-in de WhatsApp")
     name: str = Field("Comerciante Anónimo", description="Nombre del comerciante o de su negocio")
+    address: str = Field("Colima, México", description="Ubicación o dirección textual del puesto")
 
 
 

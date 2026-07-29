@@ -286,7 +286,7 @@ def seed_database(repo: VendorRepositoryPort) -> None:
 
         # 5. Agregar registro a la lista de inserción masiva
         # Los campos en orden para la consulta SQL:
-        # phone, latitude, longitude, inventory_category, registration_timestamp, rate_limit_tokens, rate_limit_last_update, message_history, opt_in, name
+        # phone, latitude, longitude, inventory_category, registration_timestamp, rate_limit_tokens, rate_limit_last_update, message_history, opt_in, name, address
         data_to_insert.append((
             phone,
             lat,
@@ -297,7 +297,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
             float(now_ts),     # rate_limit_last_update
             history_json,
             1,                 # opt_in (True para todos los pre-sembrados con interacciones)
-            name               # name
+            name,              # name
+            market["name"]     # address
         ))
 
     # 6. Guardar registros en masa de manera transaccional y optimizada en SQLite
@@ -312,8 +313,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
                     INSERT OR REPLACE INTO vendors (
                         phone, latitude, longitude, inventory_category, 
                         registration_timestamp, rate_limit_tokens, 
-                        rate_limit_last_update, message_history, opt_in, name
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        rate_limit_last_update, message_history, opt_in, name, address
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, data_to_insert)
                 conn.commit()
             except Exception as e:
@@ -336,7 +337,8 @@ def seed_database(repo: VendorRepositoryPort) -> None:
                     rate_limit_last_update=item[6],
                     message_history=json.loads(item[7]),
                     opt_in=bool(item[8]),
-                    name=item[9]
+                    name=item[9],
+                    address=item[10]
                 )
                 repo.save(vendor_obj)
         except Exception as e:
