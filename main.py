@@ -467,6 +467,29 @@ def get_map_page():
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Mapa no encontrado</h1>", status_code=404)
 
+@app.get("/api/debug-db")
+def debug_db():
+    if isinstance(repo, SQLiteVendorRepository):
+        conn = repo._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM vendors")
+            total_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM vendors WHERE is_simulated = 1")
+            simulated_count = cursor.fetchone()[0]
+            cursor.execute("PRAGMA table_info(vendors)")
+            columns = cursor.fetchall()
+            return {
+                "total_count": total_count,
+                "simulated_count": simulated_count,
+                "columns": [c[1] for c in columns]
+            }
+        except Exception as e:
+            return {"error": str(e)}
+        finally:
+            conn.close()
+    return {"error": "Not SQLite repo"}
+
 _cached_index_html = None
 
 @app.get("/", response_class=HTMLResponse)
