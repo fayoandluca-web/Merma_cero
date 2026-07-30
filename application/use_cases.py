@@ -443,6 +443,8 @@ class OraculoUseCase:
         sent_alerts = []
 
         for vendor in vendors:
+            if vendor.is_simulated:
+                continue
             # Consultar clima para el vendedor
             weather = self.weather_service.get_weather(vendor.latitude, vendor.longitude)
             
@@ -540,6 +542,8 @@ class OraculoUseCase:
         )
         now = time.time()
         for vendor in vendors:
+            if vendor.is_simulated:
+                continue
             if vendor.opt_in:
                 self.message_sender.send_message(vendor.phone, survey_message)
                 log_entry = {
