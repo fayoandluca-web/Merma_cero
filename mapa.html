@@ -407,8 +407,9 @@
 
         // Función para actualizar datos y estadísticas de forma síncrona
         function updateDashboardData() {
+            var cacheBuster = Date.now();
             // 1. Cargar estadísticas agregadas reales o simuladas
-            fetch('/api/stats?show_simulated=' + showSimulated)
+            fetch('/api/stats?show_simulated=' + showSimulated + '&_t=' + cacheBuster)
                 .then(function(res) { return res.json(); })
                 .then(function(stats) {
                     document.getElementById('stat-savings').textContent = Number(stats.total_savings).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -452,7 +453,7 @@
                 });
 
             // 2. Cargar y pintar comerciantes reales en el mapa
-            fetch('/api/vendors?show_simulated=' + showSimulated)
+            fetch('/api/vendors?show_simulated=' + showSimulated + '&_t=' + cacheBuster)
                 .then(function(res) { return res.json(); })
                 .then(function(vendors) {
                     markersGroup.clearLayers();
