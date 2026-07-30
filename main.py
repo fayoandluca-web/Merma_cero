@@ -467,6 +467,23 @@ def get_map_page():
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Mapa no encontrado</h1>", status_code=404)
 
+@app.get("/api/history")
+def get_history():
+    try:
+        vendors = repo.get_all()
+        real_vendors = [v for v in vendors if v.opt_in and not v.is_simulated]
+        res = []
+        for v in real_vendors:
+            res.append({
+                "phone": v.phone,
+                "name": v.name,
+                "address": v.address,
+                "history": v.message_history[-5:] if v.message_history else []
+            })
+        return res
+    except Exception as e:
+        return {"error": str(e)}
+
 _cached_index_html = None
 
 @app.get("/", response_class=HTMLResponse)
