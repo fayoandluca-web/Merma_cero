@@ -467,6 +467,29 @@ def get_map_page():
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Mapa no encontrado</h1>", status_code=404)
 
+@app.get("/api/update-phone")
+def update_phone():
+    try:
+        # Buscamos el vendor con el teléfono viejo
+        vendor = repo.get_by_phone("+5217202280749")
+        if vendor:
+            # Eliminar el viejo de la base de datos
+            conn = repo._get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM vendors WHERE phone = ?", ("+5217202280749",))
+                conn.commit()
+            finally:
+                conn.close()
+            
+            # Crear y guardar con el nuevo teléfono
+            vendor.phone = "+527202280749"
+            repo.save(vendor)
+            return {"status": "success", "message": "Teléfono actualizado a +527202280749"}
+        return {"status": "error", "message": "No se encontró el teléfono viejo"}
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/api/history")
 def get_history():
     try:
