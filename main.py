@@ -467,60 +467,6 @@ def get_map_page():
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Mapa no encontrado</h1>", status_code=404)
 
-@app.get("/api/change-loc")
-def change_loc(lat: float = 29.07, lon: float = -110.95):
-    try:
-        vendor = repo.get_by_phone("+527202280749")
-        if vendor:
-            vendor.latitude = lat
-            vendor.longitude = lon
-            vendor.address = "Hermosillo, Sonora" if lat == 29.07 else "Colima, México"
-            repo.save(vendor)
-            return {"status": "success", "message": f"Ubicación actualizada a {lat}, {lon}"}
-        return {"status": "error", "message": "No se encontró el vendedor"}
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.get("/api/update-phone")
-def update_phone():
-    try:
-        # Buscamos el vendor con el teléfono viejo
-        vendor = repo.get_by_phone("+5217202280749")
-        if vendor:
-            # Eliminar el viejo de la base de datos
-            conn = repo._get_connection()
-            try:
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM vendors WHERE phone = ?", ("+5217202280749",))
-                conn.commit()
-            finally:
-                conn.close()
-            
-            # Crear y guardar con el nuevo teléfono
-            vendor.phone = "+527202280749"
-            repo.save(vendor)
-            return {"status": "success", "message": "Teléfono actualizado a +527202280749"}
-        return {"status": "error", "message": "No se encontró el teléfono viejo"}
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.get("/api/history")
-def get_history():
-    try:
-        vendors = repo.get_all()
-        real_vendors = [v for v in vendors if v.opt_in and not v.is_simulated]
-        res = []
-        for v in real_vendors:
-            res.append({
-                "phone": v.phone,
-                "name": v.name,
-                "address": v.address,
-                "history": v.message_history[-5:] if v.message_history else []
-            })
-        return res
-    except Exception as e:
-        return {"error": str(e)}
-
 _cached_index_html = None
 
 @app.get("/", response_class=HTMLResponse)
