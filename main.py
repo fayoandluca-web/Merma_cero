@@ -467,6 +467,20 @@ def get_map_page():
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Mapa no encontrado</h1>", status_code=404)
 
+@app.get("/api/change-loc")
+def change_loc(lat: float = 29.07, lon: float = -110.95):
+    try:
+        vendor = repo.get_by_phone("+527202280749")
+        if vendor:
+            vendor.latitude = lat
+            vendor.longitude = lon
+            vendor.address = "Hermosillo, Sonora" if lat == 29.07 else "Colima, México"
+            repo.save(vendor)
+            return {"status": "success", "message": f"Ubicación actualizada a {lat}, {lon}"}
+        return {"status": "error", "message": "No se encontró el vendedor"}
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/api/update-phone")
 def update_phone():
     try:
