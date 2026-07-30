@@ -467,6 +467,42 @@ def get_map_page():
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Mapa no encontrado</h1>", status_code=404)
 
+@app.get("/api/test-twilio")
+def test_twilio(phone: str = "+527202280749"):
+    try:
+        from merma_cero.infrastructure.twilio_adapter import TwilioAdapter
+        adapter = TwilioAdapter()
+        adapter.account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        adapter.auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        adapter.from_number = os.getenv("TWILIO_FROM_NUMBER")
+        
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{adapter.account_sid}/Messages.json"
+        to_number = phone if phone.startswith("whatsapp:") else f"whatsapp:{phone}"
+        from_number = adapter.from_number if adapter.from_number.startswith("whatsapp:") else f"whatsapp:{adapter.from_number}"
+        
+        data = {
+            "From": from_number,
+            "To": to_number,
+            "Body": "Mensaje de prueba directo del oráculo Merma Cero"
+        }
+        import urllib.request, urllib.parse, base64
+        payload = urllib.parse.urlencode(data).encode("utf-8")
+        auth = base64.b64encode(f"{adapter.account_sid}:{adapter.auth_token}".encode("utf-8")).decode("utf-8")
+        
+        req = urllib.request.Request(url, data=payload, method="POST")
+        req.add_header("Authorization", f"Basic {auth}")
+        req.add_header("Content-Type", "application/x-www-form-urlencoded")
+        
+        try:
+            with urllib.request.urlopen(req, timeout=10) as response:
+                res_body = response.read().decode("utf-8")
+                return {"status": "success", "response": json.loads(res_body)}
+        except urllib.error.HTTPError as e:
+            res_error = e.read().decode("utf-8") if e.fp else str(e)
+            return {"status": "error", "code": e.code, "body": res_error}
+    except Exception as e:
+        return {"status": "exception", "error": str(e)}
+
 _cached_index_html = None
 
 @app.get("/", response_class=HTMLResponse)
