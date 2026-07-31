@@ -556,3 +556,97 @@ class OraculoUseCase:
                 sent_surveys.append(vendor.phone)
         return sent_surveys
 
+    def check_and_send_sudden_alerts(self) -> List[str]:
+        """Compara las alertas recientes con el clima actual y envía alertas de emergencia por cambios drásticos repentinos."""
+        vendors = self.repository.get_all()
+        sent_alerts = []
+        now = time.time()
+
+        for vendor in vendors:
+            if vendor.is_simulated or not vendor.opt_in:
+                continue
+
+            current_weather = self.weather_service.get_weather(vendor.latitude, vendor.longitude)
+
+            last_alert_weather = None
+            for log in reversed(vendor.message_history):
+                if isinstance(log, dict) and log.get("type") == "proactive_alert" and "weather" in log:
+                    last_alert_weather = log["weather"]
+                    break
+
+            if last_alert_weather:
+                last_precip = last_alert_weather.get("precipitation_probability", 0.0)
+                curr_precip = current_weather.precipitation_probability
+                
+                last_temp = last_alert_weather.get("temperature", 0.0)
+                curr_temp = current_weather.temperature
+
+                if (curr_precip - last_precip) > 0.3 or abs(curr_temp - last_temp) > 5.0:
+                    shelf_life = DecayKinetics.calculate_shelf_life(vendor.inventory_category, current_weather)
+                    optimal_purchase = KellyMermaSizer.optimize_stock(
+                        category=vendor.inventory_category,
+                        weather=current_weather,
+                        base_demand_mean=DEFAULT_DEMAND_MEAN,
+                        base_demand_std=DEFAULT_DEMAND_STD
+                    )
+                    pct_stock = (optimal_purchase / DEFAULT_DEMAND_MEAN) * 100.0
+
+                    params = INVENTORY_PARAMETERS.get(vendor.inventory_category, INVENTORY_PARAMETERS["generic"])
+                    cost_unit = params["default_cost"]
+                    salvage_base = params["default_salvage"]
+                    decay_rate = DecayKinetics.calculate_decay_rate(vendor.inventory_category, current_weather)
+                    salvage_effective = salvage_base * float(math.exp(-decay_rate))
+                    
+                    avoided_units = max(0.0, DEFAULT_DEMAND_MEAN - optimal_purchase)
+                    saved_cost_est = avoided_units * (cost_unit - salvage_effective)
+
+                    recommendation = self.ai_service.get_recommendation(
+                        category=vendor.inventory_category,
+                        weather=current_weather,
+                        shelf_life=shelf_life,
+                        optimal_purchase_pct=pct_stock
+                    )
+                    
+                    cat_es = {
+                        "seafood": "Pescados y Mariscos",
+                        "flowers": "Flores y Plantas",
+                        "fruit_vegetables": "Frutas y Verduras",
+                        "dairy": "Lácteos y Quesos",
+                        "generic": "Mercancía General"
+                    }.get(vendor.inventory_category, "Mercancía General")
+                    
+                    alert_message = (
+                        f"⚠️ *ALERTA DE EMERGENCIA CLIMÁTICA REPENTINA*\n"
+                        f"Giro: {cat_es}\n\n"
+                        f"Detectamos un cambio climático drástico imprevisto en tu zona:\n"
+                        f"🌡️ Nueva Temperatura: {current_weather.temperature:.1f}°C | 🌧️ Probabilidad de Lluvia: {current_weather.precipitation_probability * 100:.0f}%\n\n"
+                        f"Tomar precauciones inmediatas:\n"
+                        f"💡 *Recomendación de la IA:*\n{recommendation}\n\n"
+                        f"_Protegiendo tu flujo de caja familiar._"
+                    )
+                    
+                    self.message_sender.send_message(vendor.phone, alert_message)
+                    
+                    log_entry = {
+                        "timestamp": now,
+                        "type": "proactive_alert",
+                        "weather": {
+                            "temperature": current_weather.temperature,
+                            "relative_humidity": current_weather.relative_humidity,
+                            "precipitation_probability": current_weather.precipitation_probability
+                        },
+                        "metrics": {
+                            "shelf_life_days": shelf_life,
+                            "optimal_purchase_pct": pct_stock,
+                            "saved_cost_estimated": saved_cost_est
+                        },
+                        "prediction_accurate": None,
+                        "message_sent": alert_message
+                    }
+                    vendor.message_history.append(log_entry)
+                    self.repository.save(vendor)
+                    sent_alerts.append(vendor.phone)
+
+        return sent_alerts
+
+

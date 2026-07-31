@@ -10,6 +10,10 @@ import json
 import secrets
 import datetime
 import traceback
+import hmac
+import hashlib
+import base64
+import urllib.parse
 from typing import Dict, Any
 
 # Asegurar que el directorio raíz está en la ruta para importación
@@ -373,6 +377,36 @@ def trigger_fortnightly_survey(response: Response):
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"status": "error", "message": "Fallo interno al enviar encuestas."}
 
+@app.post("/alerts/sudden", status_code=status.HTTP_200_OK)
+@app.get("/alerts/sudden", status_code=status.HTTP_200_OK)
+def trigger_sudden_climate_alerts(response: Response):
+    """Scan and send emergency weather alerts to all registered merchants when sudden drastic weather changes are detected."""
+    trace_id = secrets.token_hex(8)
+    log_json(
+        severity="INFO",
+        message="Iniciando escaneo de alertas climáticas repentinas",
+        trace_id=trace_id
+    )
+    try:
+        sent_alerts = oraculo.check_and_send_sudden_alerts()
+        log_json(
+            severity="INFO",
+            message="Escaneo de alertas climáticas repentinas completado",
+            context={"alerts_sent_count": len(sent_alerts), "recipients": sent_alerts},
+            trace_id=trace_id
+        )
+        return {"status": "success", "alerts_sent_count": len(sent_alerts), "recipients": sent_alerts}
+    except Exception as e:
+        tb = "".join(traceback.format_exception(None, e, e.__traceback__))
+        log_json(
+            severity="CRITICAL",
+            message="Fallo al procesar alertas repentinas",
+            context={"exception": str(e), "traceback": tb},
+            trace_id=trace_id
+        )
+        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        return {"status": "error", "message": "Fallo interno al enviar alertas repentinas."}
+
 @app.get("/api/vendors", status_code=status.HTTP_200_OK)
 def get_vendors_api(show_simulated: bool = False):
     """Retorna la lista de todos los vendedores registrados con opt-in activo para pintar en el mapa interactivo."""
@@ -550,13 +584,13 @@ async def process_webhook_message(request: Request, response: Response):
     # 1. Leer el body según content-type (soporte para JSON y Form Urlencoded de Twilio)
     content_type = request.headers.get("content-type", "")
     payload = {}
+    is_twilio_form = "application/x-www-form-urlencoded" in content_type
     
     try:
-        if "application/x-www-form-urlencoded" in content_type:
+        if is_twilio_form:
             # Parseo puro sin dependencia de python-multipart
             body_bytes = await request.body()
             body_str = body_bytes.decode("utf-8")
-            import urllib.parse
             payload = {k: v[0] for k, v in urllib.parse.parse_qs(body_str).items()}
         else:
             payload = await request.json()
@@ -569,6 +603,60 @@ async def process_webhook_message(request: Request, response: Response):
         )
         response.status_code = status.HTTP_400_BAD_REQUEST
         return {"status": "error", "message": "Cuerpo de petición malformado."}
+
+    # 1.5. Validación de firma Twilio (OWASP A03 - Spoofing Prevention)
+    if is_twilio_form or request.headers.get("X-Twilio-Signature"):
+        bypass_validation = os.getenv("BYPASS_TWILIO_VALIDATION", "false").lower() == "true"
+        if not bypass_validation:
+            twilio_signature = request.headers.get("X-Twilio-Signature")
+            if not twilio_signature:
+                log_json(
+                    severity="WARN",
+                    message="Petición rechazada: Falta cabecera X-Twilio-Signature.",
+                    trace_id=trace_id
+                )
+                response.status_code = status.HTTP_403_FORBIDDEN
+                return {"status": "error", "message": "Firma de seguridad requerida."}
+                
+            auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+            if not auth_token:
+                log_json(
+                    severity="CRITICAL",
+                    message="No se puede validar Twilio Signature sin TWILIO_AUTH_TOKEN configurado.",
+                    trace_id=trace_id
+                )
+                response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+                return {"status": "error", "message": "Configuración de seguridad incompleta."}
+
+            # Reconstruir URL solicitada
+            public_url = os.getenv("PUBLIC_URL")
+            if public_url:
+                url_for_validation = public_url.rstrip("/") + request.scope.get("path", "/webhook")
+                query_string = request.scope.get("query_string", b"").decode("utf-8")
+                if query_string:
+                    url_for_validation += f"?{query_string}"
+            else:
+                url_for_validation = str(request.url)
+            
+            # Construir cadena a firmar según especificación de Twilio
+            data_to_sign = url_for_validation
+            if payload and is_twilio_form:
+                for k, v in sorted(payload.items()):
+                    data_to_sign += f"{k}{v}"
+                    
+            # Calcular HMAC-SHA1 y validar
+            mac = hmac.new(auth_token.encode("utf-8"), data_to_sign.encode("utf-8"), hashlib.sha1)
+            expected_signature = base64.b64encode(mac.digest()).decode("utf-8")
+            
+            if not hmac.compare_digest(expected_signature, twilio_signature):
+                log_json(
+                    severity="WARN",
+                    message="Petición rechazada: Firma X-Twilio-Signature inválida.",
+                    context={"url": url_for_validation},
+                    trace_id=trace_id
+                )
+                response.status_code = status.HTTP_403_FORBIDDEN
+                return {"status": "error", "message": "Firma de seguridad inválida."}
 
     # 2. Extraer teléfono, texto y nombre con soporte para Twilio, Meta y formato plano
     phone = None

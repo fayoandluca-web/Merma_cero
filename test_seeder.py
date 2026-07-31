@@ -43,6 +43,8 @@ class TestSeederSystem(unittest.TestCase):
 
     def tearDown(self) -> None:
         """Limpieza de base de datos de pruebas."""
+        if hasattr(self, 'repo'):
+            self.repo.close()
         try:
             if os.path.exists(self.test_db_path):
                 os.remove(self.test_db_path)

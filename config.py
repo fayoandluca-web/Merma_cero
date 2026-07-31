@@ -5,6 +5,8 @@ import os
 # Rutas de almacenamiento
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_PATH = os.path.join(BASE_DIR, "database.json")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 # Constantes Físicas para Cinética de Degradación
 R_GAS_CONSTANT = 8.314  # Constante universal de los gases (J / mol*K)
