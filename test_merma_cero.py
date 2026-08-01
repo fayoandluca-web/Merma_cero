@@ -85,14 +85,14 @@ class TestMermaCeroSystem(unittest.TestCase):
         saved_vendor = self.repo.get_by_phone(phone)
         self.assertIsNotNone(saved_vendor)
         self.assertTrue(saved_vendor.opt_in)
-        self.assertEqual(saved_vendor.inventory_category, "pescado_estandar")
+        self.assertEqual(saved_vendor.inventory_category, "pescaderia_del_barrio")
         self.assertAlmostEqual(saved_vendor.latitude, 19.43)
         self.assertAlmostEqual(saved_vendor.longitude, -99.13)
         self.assertEqual(saved_vendor.age, 17)
         self.assertEqual(saved_vendor.business_years, 2.0)
 
         # Assert: Salida de mensajería generada
-        self.assertIn("Pescados Estandar", response)
+        self.assertIn("Pescadería del Barrio", response)
         self.assertIn("Vida de Anaquel", response)
         self.assertIn("Recomendación de Compra", response)
 
@@ -139,7 +139,7 @@ class TestMermaCeroSystem(unittest.TestCase):
                 phone="+523121234567",
                 latitude=95.0,  # Latitud inválida > 90
                 longitude=-99.13,
-                inventory_category="flowers",
+                inventory_category="floreria_del_barrio",
                 registration_timestamp=time.time(),
                 rate_limit_last_update=time.time()
             )
@@ -151,7 +151,7 @@ class TestMermaCeroSystem(unittest.TestCase):
                 phone="numero-invalido-o-inyeccion;--",
                 latitude=19.43,
                 longitude=-99.13,
-                inventory_category="flowers",
+                inventory_category="floreria_del_barrio",
                 registration_timestamp=time.time(),
                 rate_limit_last_update=time.time()
             )
@@ -179,7 +179,7 @@ class TestMermaCeroSystem(unittest.TestCase):
             phone=phone,
             latitude=19.4326,
             longitude=-99.1332,
-            inventory_category="generic",
+            inventory_category="abarrotes_del_barrio",
             registration_timestamp=time.time(),
             rate_limit_last_update=time.time(),
             opt_in=True,
@@ -415,14 +415,14 @@ class TestMermaCeroSystem(unittest.TestCase):
         
         # Solicitar predicción
         pred_resp = self.use_case.process_message(telegram_id, "vendo flores en lat 19.00 lon -104.00")
-        self.assertIn("Flores Estandar", pred_resp)
+        self.assertIn("Florería del Barrio", pred_resp)
         self.assertIn("Recomendación de Compra", pred_resp)
         
         # Verificar guardado en repositorio
         vendor = self.repo.get_by_phone(telegram_id)
         self.assertIsNotNone(vendor)
         self.assertTrue(vendor.opt_in)
-        self.assertEqual(vendor.inventory_category, "flor_estandar")
+        self.assertEqual(vendor.inventory_category, "floreria_del_barrio")
         self.assertEqual(vendor.latitude, 19.00)
         self.assertEqual(vendor.longitude, -104.00)
         self.assertEqual(vendor.age, 45)

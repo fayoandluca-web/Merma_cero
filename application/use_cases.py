@@ -2,7 +2,7 @@ import time
 import re
 import math
 from typing import Tuple, Optional, List
-from merma_cero.config import RATE_LIMIT_MAX_TOKENS, RATE_LIMIT_REFILL_RATE, DEFAULT_DEMAND_MEAN, DEFAULT_DEMAND_STD, INVENTORY_PARAMETERS, BASE_PRODUCTS, VARIETIES, get_category_name_es
+from merma_cero.config import RATE_LIMIT_MAX_TOKENS, RATE_LIMIT_REFILL_RATE, DEFAULT_DEMAND_MEAN, DEFAULT_DEMAND_STD, INVENTORY_PARAMETERS, giros, adjectives, get_category_name_es
 from merma_cero.domain.entities import Vendor, WeatherState
 from merma_cero.domain.exceptions import SecurityViolationError, InvalidInputError
 from merma_cero.domain.models import DecayKinetics, KellyMermaSizer
@@ -371,25 +371,30 @@ class OraculoUseCase:
     def _parse_category(self, text: str) -> Optional[str]:
         """Deduce la categoría del producto del vendedor usando NLP regex ligero."""
         text_lower = text.lower()
-        found_base = None
-        for cat_group, bases in BASE_PRODUCTS.items():
-            for base in bases:
-                if base in text_lower:
-                    found_base = base
-                    break
-            if found_base:
-                break
+        found_giro = None
         
-        if not found_base:
-            return "generic"
-            
-        found_variety = "estandar"
-        for variety in VARIETIES:
-            if variety in text_lower:
-                found_variety = variety
+        for g_key in giros.keys():
+            if g_key in text_lower:
+                found_giro = g_key
                 break
                 
-        return f"{found_base}_{found_variety}"
+        if not found_giro:
+            for g_key in giros.keys():
+                stem = g_key.replace("eria", "").replace("tienda_de_", "").replace("ia", "")
+                if len(stem) >= 4 and stem in text_lower:
+                    found_giro = g_key
+                    break
+        
+        if not found_giro:
+            return "abarrotes_del_barrio"
+            
+        found_adj = "del_barrio"
+        for a_key in adjectives.keys():
+            if a_key.replace("_", " ") in text_lower:
+                found_adj = a_key
+                break
+                
+        return f"{found_giro}_{found_adj}"
 
     def _parse_address(self, text: str) -> Optional[str]:
         """Busca y extrae la dirección textual, soportando también coordenadas lat/lon como dirección."""
