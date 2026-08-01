@@ -544,6 +544,32 @@ def get_stats_api(show_simulated: bool = False):
             "top_cities": []
         }
 
+@app.get("/api/categories", status_code=status.HTTP_200_OK)
+def get_categories_api():
+    """Retorna las 1000 categorías de inventario y sus parámetros dinámicos."""
+    try:
+        from merma_cero.config import INVENTORY_PARAMETERS, get_category_name_es
+        result = {}
+        for key, params in INVENTORY_PARAMETERS.items():
+            result[key] = {
+                "Ea": params["Ea"],
+                "K0": params["K0"],
+                "alpha": params["alpha"],
+                "price": params["default_price"],
+                "cost": params["default_cost"],
+                "salvage": params["default_salvage"],
+                "name_es": get_category_name_es(key)
+            }
+        return result
+    except Exception as e:
+        log_json(
+            severity="ERROR",
+            message="Fallo al obtener categorías",
+            context={"error": str(e)}
+        )
+        return {}
+
+
 @app.get("/mapa", response_class=HTMLResponse)
 @app.get("/map", response_class=HTMLResponse)
 def get_map_page():

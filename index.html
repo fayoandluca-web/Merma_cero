@@ -673,15 +673,44 @@
     </div>
 
     <script>
-        // Constantes Físicas
         const R_GAS = 8.314;
-        const INVENTORY_PARAMETERS = {
+        let INVENTORY_PARAMETERS = {
             seafood: { Ea: 65000.0, K0: 2.5e10, alpha: 1.2, price: 120.0, cost: 70.0, salvage: 10.0 },
             flowers: { Ea: 55000.0, K0: 8.0e8, alpha: -0.4, price: 50.0, cost: 20.0, salvage: 5.0 },
             fruit_vegetables: { Ea: 48000.0, K0: 4.5e7, alpha: 0.8, price: 40.0, cost: 18.0, salvage: 4.0 },
             dairy: { Ea: 72000.0, K0: 5.0e11, alpha: 0.5, price: 35.0, cost: 22.0, salvage: 2.0 },
             generic: { Ea: 50000.0, K0: 1.0e8, alpha: 0.5, price: 50.0, cost: 25.0, salvage: 5.0 }
         };
+
+        // Cargar las 1000 categorías desde la API
+        fetch('/api/categories')
+            .then(res => res.json())
+            .then(data => {
+                if (data && Object.keys(data).length > 0) {
+                    INVENTORY_PARAMETERS = data;
+                    const select = document.getElementById('category');
+                    select.innerHTML = '';
+                    const sortedKeys = Object.keys(INVENTORY_PARAMETERS).sort((a, b) => {
+                        const nameA = INVENTORY_PARAMETERS[a].name_es.toLowerCase();
+                        const nameB = INVENTORY_PARAMETERS[b].name_es.toLowerCase();
+                        return nameA.localeCompare(nameB);
+                    });
+                    sortedKeys.forEach(key => {
+                        const opt = document.createElement('option');
+                        opt.value = key;
+                        opt.textContent = INVENTORY_PARAMETERS[key].name_es;
+                        select.appendChild(opt);
+                    });
+                    if (INVENTORY_PARAMETERS['pescado_estandar']) {
+                        select.value = 'pescado_estandar';
+                    } else if (INVENTORY_PARAMETERS['seafood']) {
+                        select.value = 'seafood';
+                    }
+                    runSimulation();
+                }
+            })
+            .catch(err => console.error("Error al cargar categorías:", err));
+
 
         // Generador Mulberry32
         function mulberry32(a) {
