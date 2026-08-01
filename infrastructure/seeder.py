@@ -331,13 +331,39 @@ def seed_database(repo: VendorRepositoryPort) -> None:
             conn = repo._get_connection()
             try:
                 cursor = conn.cursor()
-                cursor.executemany("""
-                    INSERT OR REPLACE INTO vendors (
-                        phone, latitude, longitude, inventory_category, 
-                        registration_timestamp, rate_limit_tokens, 
-                        rate_limit_last_update, message_history, opt_in, name, address, is_simulated, age, business_years
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, data_to_insert)
+                is_postgres = (repo.engine.dialect.name == "postgresql")
+
+                if is_postgres:
+                    query = """
+                        INSERT INTO vendors (
+                            phone, latitude, longitude, inventory_category, 
+                            registration_timestamp, rate_limit_tokens, 
+                            rate_limit_last_update, message_history, opt_in, name, address, is_simulated, age, business_years
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (phone) DO UPDATE SET
+                            latitude=EXCLUDED.latitude,
+                            longitude=EXCLUDED.longitude,
+                            inventory_category=EXCLUDED.inventory_category,
+                            registration_timestamp=EXCLUDED.registration_timestamp,
+                            rate_limit_tokens=EXCLUDED.rate_limit_tokens,
+                            rate_limit_last_update=EXCLUDED.rate_limit_last_update,
+                            message_history=EXCLUDED.message_history,
+                            opt_in=EXCLUDED.opt_in,
+                            name=EXCLUDED.name,
+                            address=EXCLUDED.address,
+                            is_simulated=EXCLUDED.is_simulated,
+                            age=EXCLUDED.age,
+                            business_years=EXCLUDED.business_years
+                    """
+                else:
+                    query = """
+                        INSERT OR REPLACE INTO vendors (
+                            phone, latitude, longitude, inventory_category, 
+                            registration_timestamp, rate_limit_tokens, 
+                            rate_limit_last_update, message_history, opt_in, name, address, is_simulated, age, business_years
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """
+                cursor.executemany(query, data_to_insert)
                 conn.commit()
             except Exception as e:
                 conn.rollback()
