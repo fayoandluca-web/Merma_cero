@@ -39,7 +39,7 @@ class SQLiteVendorRepository(VendorRepositoryPort):
     """Adaptador de persistencia usando SQLAlchemy (soporta PostgreSQL y SQLite híbrido)."""
 
     def __init__(self, db_path: Optional[str] = None):
-        if DATABASE_URL and not db_path:
+        if DATABASE_URL and (not db_path or "test_" not in db_path):
             # PostgreSQL si DATABASE_URL está presente y no se sobreescribe con db_path
             engine_url = DATABASE_URL
             if engine_url.startswith("postgres://"):
