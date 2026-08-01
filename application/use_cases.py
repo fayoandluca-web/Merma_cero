@@ -2,7 +2,7 @@ import time
 import re
 import math
 from typing import Tuple, Optional, List
-from merma_cero.config import RATE_LIMIT_MAX_TOKENS, RATE_LIMIT_REFILL_RATE, DEFAULT_DEMAND_MEAN, DEFAULT_DEMAND_STD, INVENTORY_PARAMETERS
+from merma_cero.config import RATE_LIMIT_MAX_TOKENS, RATE_LIMIT_REFILL_RATE, DEFAULT_DEMAND_MEAN, DEFAULT_DEMAND_STD, INVENTORY_PARAMETERS, BASE_PRODUCTS, VARIETIES, get_category_name_es
 from merma_cero.domain.entities import Vendor, WeatherState
 from merma_cero.domain.exceptions import SecurityViolationError, InvalidInputError
 from merma_cero.domain.models import DecayKinetics, KellyMermaSizer
@@ -371,17 +371,25 @@ class OraculoUseCase:
     def _parse_category(self, text: str) -> Optional[str]:
         """Deduce la categoría del producto del vendedor usando NLP regex ligero."""
         text_lower = text.lower()
-        mapping = {
-            "seafood": ["pescado", "marisco", "camaron", "ostion", "pulpo", "jaiba", "seafood"],
-            "flowers": ["flor", "flores", "rosas", "arreglo", "ramo", "clavel", "flowers"],
-            "fruit_vegetables": ["verdura", "fruta", "limon", "aguacate", "jitomate", "manzana", "platano", "fruit", "vegetables"],
-            "dairy": ["leche", "queso", "crema", "yogur", "lacteo", "dairy"],
-        }
-        for category, keywords in mapping.items():
-            for kw in keywords:
-                if kw in text_lower:
-                    return category
-        return None
+        found_base = None
+        for cat_group, bases in BASE_PRODUCTS.items():
+            for base in bases:
+                if base in text_lower:
+                    found_base = base
+                    break
+            if found_base:
+                break
+        
+        if not found_base:
+            return "generic"
+            
+        found_variety = "estandar"
+        for variety in VARIETIES:
+            if variety in text_lower:
+                found_variety = variety
+                break
+                
+        return f"{found_base}_{found_variety}"
 
     def _parse_address(self, text: str) -> Optional[str]:
         """Busca y extrae la dirección textual, soportando también coordenadas lat/lon como dirección."""
@@ -407,13 +415,7 @@ class OraculoUseCase:
         optimal_purchase: float
     ) -> str:
         """Genera el mensaje final adaptado a la economía informal (ESG/Fricción Cero)."""
-        cat_es = {
-            "seafood": "Pescados y Mariscos",
-            "flowers": "Flores y Plantas",
-            "fruit_vegetables": "Frutas y Verduras",
-            "dairy": "Lácteos y Quesos",
-            "generic": "Mercancía General"
-        }.get(vendor.inventory_category, "Mercancía General")
+        cat_es = get_category_name_es(vendor.inventory_category)
 
         # Conversión a porcentaje del stock recomendado sobre la demanda habitual (100 unidades)
         pct_stock = (optimal_purchase / DEFAULT_DEMAND_MEAN) * 100.0
@@ -480,13 +482,7 @@ class OraculoUseCase:
                     optimal_purchase_pct=pct_stock
                 )
                 
-                cat_es = {
-                    "seafood": "Pescados y Mariscos",
-                    "flowers": "Flores y Plantas",
-                    "fruit_vegetables": "Frutas y Verduras",
-                    "dairy": "Lácteos y Quesos",
-                    "generic": "Mercancía General"
-                }.get(vendor.inventory_category, "Mercancía General")
+                cat_es = get_category_name_es(vendor.inventory_category)
                 
                 alert_message = (
                     f"🚨 *ALERTA CLIMÁTICA CRÍTICA — Merma Cero*\n"
@@ -607,13 +603,7 @@ class OraculoUseCase:
                         optimal_purchase_pct=pct_stock
                     )
                     
-                    cat_es = {
-                        "seafood": "Pescados y Mariscos",
-                        "flowers": "Flores y Plantas",
-                        "fruit_vegetables": "Frutas y Verduras",
-                        "dairy": "Lácteos y Quesos",
-                        "generic": "Mercancía General"
-                    }.get(vendor.inventory_category, "Mercancía General")
+                    cat_es = get_category_name_es(vendor.inventory_category)
                     
                     alert_message = (
                         f"⚠️ *ALERTA DE EMERGENCIA CLIMÁTICA REPENTINA*\n"

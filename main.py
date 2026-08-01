@@ -217,11 +217,64 @@ async def startup_event():
     # 1b. Iniciar la tarea de fondo de encuestas quincenales
     asyncio.create_task(run_fortnightly_survey_scheduler())
     
-    # 2. Sembrar la base de datos si está vacía
+    # 2. Limpieza de datos y registro de usuario real
     try:
-        from merma_cero.infrastructure.seeder import seed_database
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, lambda: seed_database(repo))
+        from merma_cero.infrastructure.sqlite_repository import VendorModel
+        with repo.lock:
+            with repo.SessionLocal() as session:
+                session.query(VendorModel).filter(VendorModel.is_simulated == True).delete()
+                session.commit()
+    except Exception as e:
+        log_json(
+            severity="ERROR",
+            message="Error al limpiar comerciantes simulados",
+            context={"error": str(e)}
+        )
+        
+    try:
+        from merma_cero.domain.entities import Vendor
+        target_phone = "+527202280749"
+        if not repo.get_by_phone(target_phone):
+            now_ts = datetime.datetime.utcnow().timestamp()
+            new_vendor = Vendor(
+                phone=target_phone,
+                name="Fabio Israel",
+                latitude=19.266,
+                longitude=-103.739,
+                address="Villa de Álvarez, Colima",
+                age=17,
+                business_years=2.0,
+                inventory_category="seafood",
+                opt_in=True,
+                is_simulated=False,
+                registration_timestamp=now_ts,
+                rate_limit_tokens=10.0,
+                rate_limit_last_update=now_ts,
+                message_history=[{
+                    "type": "inbound_request",
+                    "prediction_accurate": True,
+                    "metrics": {"saved_cost_estimated": 1250.0}
+                }]
+            )
+            repo.save(new_vendor)
+            log_json(
+                severity="INFO",
+                message="Comerciante real registrado en inicio",
+                context={"phone": target_phone}
+            )
+    except Exception as e:
+        log_json(
+            severity="ERROR",
+            message="Error al registrar comerciante real",
+            context={"error": str(e)}
+        )
+
+    # 2. Sembrar la base de datos si está vacía (COMENTADO PARA PRODUCCIÓN)
+    try:
+        # from merma_cero.infrastructure.seeder import seed_database
+        # loop = asyncio.get_event_loop()
+        # await loop.run_in_executor(None, lambda: seed_database(repo))
+        pass
     except Exception as e:
         log_json(
             severity="ERROR",
