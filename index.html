@@ -695,14 +695,19 @@
                         const nameB = INVENTORY_PARAMETERS[b].name_es.toLowerCase();
                         return nameA.localeCompare(nameB);
                     });
+                    const seenNames = new Set();
                     sortedKeys.forEach(key => {
-                        const opt = document.createElement('option');
-                        opt.value = key;
-                        opt.textContent = INVENTORY_PARAMETERS[key].name_es;
-                        select.appendChild(opt);
+                        const name = INVENTORY_PARAMETERS[key].name_es;
+                        if (!seenNames.has(name)) {
+                            seenNames.add(name);
+                            const opt = document.createElement('option');
+                            opt.value = key;
+                            opt.textContent = name;
+                            select.appendChild(opt);
+                        }
                     });
-                    if (INVENTORY_PARAMETERS['pescado_estandar']) {
-                        select.value = 'pescado_estandar';
+                    if (INVENTORY_PARAMETERS['pescaderia_del_barrio']) {
+                        select.value = 'pescaderia_del_barrio';
                     } else if (INVENTORY_PARAMETERS['seafood']) {
                         select.value = 'seafood';
                     }

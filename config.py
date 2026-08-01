@@ -215,9 +215,7 @@ def get_category_name_es(category_key: str) -> str:
     
     for g_key, g_val in giros.items():
         if category_key.startswith(g_key + "_"):
-            a_key = category_key[len(g_key)+1:]
-            if a_key in adjectives:
-                return g_val[0] + adjectives[a_key]
+            return g_val[0]
                 
     return category_key.replace("_", " ").title()
 

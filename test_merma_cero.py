@@ -92,7 +92,7 @@ class TestMermaCeroSystem(unittest.TestCase):
         self.assertEqual(saved_vendor.business_years, 2.0)
 
         # Assert: Salida de mensajería generada
-        self.assertIn("Pescadería del Barrio", response)
+        self.assertIn("Pescadería", response)
         self.assertIn("Vida de Anaquel", response)
         self.assertIn("Recomendación de Compra", response)
 
@@ -415,7 +415,7 @@ class TestMermaCeroSystem(unittest.TestCase):
         
         # Solicitar predicción
         pred_resp = self.use_case.process_message(telegram_id, "vendo flores en lat 19.00 lon -104.00")
-        self.assertIn("Florería del Barrio", pred_resp)
+        self.assertIn("Florería", pred_resp)
         self.assertIn("Recomendación de Compra", pred_resp)
         
         # Verificar guardado en repositorio
