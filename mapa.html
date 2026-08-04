@@ -459,8 +459,8 @@
                     var latLngs = [];
 
                     vendors.forEach(function(vendor) {
-                        var iconChar = categoryIcons[vendor.inventory_category] || '📦';
-                        var catName = categoryNames[vendor.inventory_category] || 'Mercancía General';
+                        var iconChar = categoryIcons[vendor.category_group] || '📦';
+                        var catName = vendor.category_name_es || 'Mercancía General';
                         
                         var customDivIcon = L.divIcon({
                             className: 'custom-div-icon',

@@ -219,6 +219,15 @@ def get_category_name_es(category_key: str) -> str:
                 
     return category_key.replace("_", " ").title()
 
+def get_category_group(category_key: str) -> str:
+    """Retorna el grupo termodinámico (seafood, flowers, etc.) de la categoría."""
+    if category_key in BASE_PARAMS:
+        return category_key
+    for g_key, g_val in giros.items():
+        if category_key.startswith(g_key + "_"):
+            return g_val[1]
+    return "generic"
+
 # Parámetros del Sizer (Optimización de Inventario)
 RISK_AERSION_LAMBDA = 0.5  # Penalización de varianza del beneficio (tipo Markowitz/VaR)
 DEFAULT_DEMAND_MEAN = 100.0

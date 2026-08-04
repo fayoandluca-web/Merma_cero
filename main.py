@@ -464,6 +464,7 @@ def trigger_sudden_climate_alerts(response: Response):
 def get_vendors_api(show_simulated: bool = False):
     """Retorna la lista de todos los vendedores registrados con opt-in activo para pintar en el mapa interactivo."""
     try:
+        from merma_cero.config import get_category_name_es, get_category_group
         vendors = repo.get_all()
         # Retornamos solo datos públicos necesarios para el mapa (por seguridad/privacidad omitimos el teléfono completo,
         # mostrando solo los últimos dígitos o un hash, o directamente omitimos el campo teléfono para proteger privacidad)
@@ -473,6 +474,8 @@ def get_vendors_api(show_simulated: bool = False):
                 "latitude": float(vendor.latitude),
                 "longitude": float(vendor.longitude),
                 "inventory_category": vendor.inventory_category,
+                "category_name_es": get_category_name_es(vendor.inventory_category),
+                "category_group": get_category_group(vendor.inventory_category),
                 "registration_timestamp": float(vendor.registration_timestamp),
                 "address": vendor.address
             }
@@ -490,6 +493,7 @@ def get_vendors_api(show_simulated: bool = False):
 def get_stats_api(show_simulated: bool = False):
     """Retorna las estadísticas acumuladas en tiempo real de los comerciantes registrados reales o simulados."""
     try:
+        from merma_cero.config import get_category_group
         vendors = repo.get_all()
         real_vendors = [v for v in vendors if v.opt_in and (show_simulated or not v.is_simulated)]
         
@@ -510,8 +514,8 @@ def get_stats_api(show_simulated: bool = False):
         # 3. Categorías
         categories = {}
         for vendor in real_vendors:
-            cat = vendor.inventory_category
-            categories[cat] = categories.get(cat, 0) + 1
+            group = get_category_group(vendor.inventory_category)
+            categories[group] = categories.get(group, 0) + 1
             
         # 4. Ciudades Top
         cities = {}
