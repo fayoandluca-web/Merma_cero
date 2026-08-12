@@ -233,15 +233,15 @@ async def startup_event():
         
     try:
         from merma_cero.domain.entities import Vendor
-        target_phone = "+527202280749"
+        target_phone = "+525575049383"
         if not repo.get_by_phone(target_phone):
             now_ts = datetime.datetime.utcnow().timestamp()
             new_vendor = Vendor(
                 phone=target_phone,
                 name="Fabio Israel",
-                latitude=19.266,
-                longitude=-103.739,
-                address="Villa de Álvarez, Colima",
+                latitude=19.4326,
+                longitude=-99.1332,
+                address="Ciudad de México",
                 age=17,
                 business_years=2.0,
                 inventory_category="seafood",
