@@ -55,13 +55,18 @@ db_path_env = os.getenv("SQLITE_DATABASE_PATH")
 repo = SQLiteVendorRepository(db_path=db_path_env)
 weather_service = OpenMeteoAdapter()
 
-# Adaptador de WhatsApp (Twilio o Mock)
-twilio_sid = os.getenv("TWILIO_ACCOUNT_SID")
-if twilio_sid and not twilio_sid.startswith("mock_"):
-    from merma_cero.infrastructure.twilio_adapter import TwilioAdapter
-    whatsapp_sender = TwilioAdapter()
+# Adaptador de WhatsApp (QR, Twilio o Mock)
+use_qr = os.getenv("USE_QR_GATEWAY", "false").lower() == "true"
+if use_qr:
+    from merma_cero.infrastructure.qr_gateway_adapter import QRGatewayAdapter
+    whatsapp_sender = QRGatewayAdapter()
 else:
-    whatsapp_sender = WhatsAppMockAdapter()
+    twilio_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    if twilio_sid and not twilio_sid.startswith("mock_"):
+        from merma_cero.infrastructure.twilio_adapter import TwilioAdapter
+        whatsapp_sender = TwilioAdapter()
+    else:
+        whatsapp_sender = WhatsAppMockAdapter()
 
 # Adaptador de Telegram
 telegram_sender = TelegramAdapter()
