@@ -43,9 +43,14 @@ const client = new Client({
     }
 });
 
+client.on('code', (code) => {
+    latestPairingCode = code;
+    console.log(`\n=================================\nCÓDIGO DE VINCULACIÓN WHATSAPP (code): ${code}\n=================================\n`);
+});
+
 client.on('pairing_code', (code) => {
     latestPairingCode = code;
-    console.log(`\n=================================\nCÓDIGO DE VINCULACIÓN WHATSAPP: ${code}\n=================================\n`);
+    console.log(`\n=================================\nCÓDIGO DE VINCULACIÓN WHATSAPP (pairing_code): ${code}\n=================================\n`);
 });
 
 client.on('qr', (qr) => {
