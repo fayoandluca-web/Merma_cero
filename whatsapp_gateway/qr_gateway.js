@@ -25,7 +25,14 @@ const client = new Client({
     puppeteer: {
         headless: true,
         executablePath: executablePath,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+            '--no-sandbox', 
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-first-run',
+            '--no-zygote'
+        ]
     },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
 });
@@ -38,6 +45,16 @@ client.on('qr', (qr) => {
 
 client.on('ready', () => {
     console.log('¡Cliente de WhatsApp listo y conectado!');
+    
+    // Iniciar latido de monitoreo para asegurar que la sesión no se congele
+    setInterval(async () => {
+        try {
+            const state = await client.getState();
+            console.log(`[Latido Monitoreo] Estado de conexión activo: ${state}`);
+        } catch (err) {
+            console.log(`[Latido Monitoreo] Alerta - Navegador no responde: ${err.message}`);
+        }
+    }, 30000);
 });
 
 client.on('message_create', async (msg) => {
