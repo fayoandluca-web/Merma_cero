@@ -38,9 +38,9 @@ const client = new Client({
         ]
     },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    pairWithPhoneNumber: process.env.PHONE_NUMBER ? {
-        phoneNumber: process.env.PHONE_NUMBER.replace('+', '').trim()
-    } : undefined
+    pairWithPhoneNumber: {
+        phoneNumber: (process.env.PHONE_NUMBER || '525575049383').replace('+', '').trim()
+    }
 });
 
 client.on('pairing_code', (code) => {
