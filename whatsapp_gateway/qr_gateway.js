@@ -1,8 +1,11 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
 const axios = require('axios');
 const express = require('express');
 const app = express();
+
+let latestQR = '';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -27,6 +30,7 @@ const client = new Client({
 });
 
 client.on('qr', (qr) => {
+    latestQR = qr;
     console.log('\n=== ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP ===\n');
     qrcode.generate(qr, { small: true });
 });
@@ -76,6 +80,47 @@ app.post('/send', async (req, res) => {
     }
 });
 
+app.get('/qr', async (req, res) => {
+    if (!latestQR) {
+        return res.send('Esperando código QR de WhatsApp... Por favor recarga esta página en 10 segundos.');
+    }
+    try {
+        const qrImage = await QRCode.toDataURL(latestQR);
+        res.send(`
+            <html>
+                <head>
+                    <title>Vincular WhatsApp - Merma Cero</title>
+                    <style>
+                        body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+                        .container { background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); text-align: center; max-width: 400px; }
+                        img { border: 15px solid white; border-radius: 12px; width: 250px; height: 250px; margin: 20px 0; }
+                        h2 { margin: 0 0 10px 0; font-size: 20px; font-weight: 600; color: #38bdf8; }
+                        p { margin: 0; font-size: 14px; color: #94a3b8; line-height: 1.5; }
+                        .footer { margin-top: 15px; font-size: 11px; color: #64748b; font-style: italic; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h2>Vincular Merma Cero</h2>
+                        <p>Abre WhatsApp en tu celular (Chip 5575049383), ve a Dispositivos Vinculados y escanea esta imagen:</p>
+                        <img src="\${qrImage}" />
+                        <p class="footer">Esta página se actualizará o cerrará una vez que se conecte el bot.</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    } catch (err) {
+        res.status(500).send('Error al generar código QR: ' + err.message);
+    }
+});
+
+app.get('/qr/status', (req, res) => {
+    res.json({ ready: client.info ? true : false });
+});
+
+app.get('/', (req, res) => {
+    res.send('WhatsApp Gateway Online');
+});
 app.listen(PORT, () => {
     console.log(`Pasarela HTTP escuchando en el puerto ${PORT}`);
     client.initialize();
