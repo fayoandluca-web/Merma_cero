@@ -39,27 +39,33 @@ client.on('ready', () => {
     console.log('¡Cliente de WhatsApp listo y conectado!');
 });
 
-client.on('message', async (msg) => {
-    if (msg.from.includes('@g.us')) return;
-
-    console.log(`Mensaje recibido de ${msg.from}: ${msg.body}`);
-    
-    // Guardar el identificador original asociado a la versión con "+" para responder correctamente
-    const cleanPhone = '+' + msg.from.split('@')[0];
-    userFromCache.set(cleanPhone, msg.from);
-
+client.on('message_create', async (msg) => {
     try {
+        if (!msg || !msg.from) return;
+        if (msg.fromMe) return; // Omitir mensajes enviados por el bot mismo
+        if (msg.from.includes('@g.us')) return; // Omitir grupos
+
+        console.log(`Mensaje detectado de ${msg.from}: ${msg.body}`);
+        
+        const senderNumber = msg.from.split('@')[0];
+        const cleanPhone = '+' + senderNumber;
+        userFromCache.set(cleanPhone, msg.from);
+
+        const profileName = (msg._data && msg._data.notifyName) ? msg._data.notifyName : 'Comerciante';
+
         // Enviar la petición al webhook de FastAPI simulando el formato URL Form Encoded de Twilio
         const params = new URLSearchParams();
-        params.append('From', `whatsapp:+${msg.from.split('@')[0]}`);
-        params.append('Body', msg.body);
-        params.append('ProfileName', msg._data.notifyName || 'Comerciante');
+        params.append('From', `whatsapp:+${senderNumber}`);
+        params.append('Body', msg.body || '');
+        params.append('ProfileName', profileName);
 
-        await axios.post(WEBHOOK_URL, params, {
+        console.log(`Enviando mensaje al webhook de FastAPI (${WEBHOOK_URL})...`);
+        const res = await axios.post(WEBHOOK_URL, params, {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
+        console.log(`Webhook respondio exitosamente:`, res.status);
     } catch (err) {
-        console.error('Error al enviar al webhook de FastAPI:', err.message);
+        console.error('Error en el manejador de mensajes de la pasarela:', err.message, err.stack);
     }
 });
 
