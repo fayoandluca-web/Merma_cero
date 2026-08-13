@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 3000;
-const WEBHOOK_URL = process.env.WEBHOOK_URL || 'http://localhost:8000/webhook';
+const WEBHOOK_URL = process.env.WEBHOOK_URL || 'https://merma-cero-backend-production.up.railway.app/webhook';
 
 // Mapa en memoria para recordar los identificadores originales (ej. @lid o @c.us)
 const userFromCache = new Map();

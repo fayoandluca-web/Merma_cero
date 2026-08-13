@@ -919,7 +919,7 @@ if __name__ == "__main__":
     else:
         # Levantar servidor Uvicorn de alto rendimiento (FastAPI)
         import uvicorn
-        host = os.getenv("HOST", "127.0.0.1")
+        host = os.getenv("HOST", "0.0.0.0")
         port = int(os.getenv("PORT", "8000"))
         log_json(
             severity="INFO",
