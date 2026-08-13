@@ -59,7 +59,7 @@ weather_service = OpenMeteoAdapter()
 use_qr = os.getenv("USE_QR_GATEWAY", "false").lower() == "true"
 if use_qr:
     from merma_cero.infrastructure.qr_gateway_adapter import QRGatewayAdapter
-    gateway_url = os.getenv("QR_GATEWAY_URL", "http://localhost:3000/send")
+    gateway_url = os.getenv("QR_GATEWAY_URL", "https://whatsapp-gateway-production-d89b.up.railway.app/send")
     whatsapp_sender = QRGatewayAdapter(gateway_url=gateway_url)
 else:
     twilio_sid = os.getenv("TWILIO_ACCOUNT_SID")
