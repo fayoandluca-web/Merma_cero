@@ -26,7 +26,7 @@ const client = new Client({
         dataPath: './.wwebjs_auth'
     }),
     puppeteer: {
-        headless: isLocal ? false : true,
+        headless: isLocal ? false : 'new',
         executablePath: isLocal ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : executablePath,
         protocolTimeout: 300000,
         args: isLocal ? ['--no-sandbox', '--disable-setuid-sandbox'] : [
@@ -37,7 +37,8 @@ const client = new Client({
             '--no-first-run',
             '--no-zygote',
             '--disable-accelerated-2d-canvas',
-            '--disable-extensions'
+            '--disable-extensions',
+            '--disable-blink-features=AutomationControlled'
         ]
     },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
