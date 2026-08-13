@@ -6,6 +6,7 @@ const express = require('express');
 const app = express();
 
 let latestQR = '';
+let latestPairingCode = '';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -18,14 +19,16 @@ const userFromCache = new Map();
 
 const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 'C:\\Users\\arqis\\.cache\\puppeteer\\chrome\\win64-146.0.7680.31\\chrome-win64\\chrome.exe';
 
+const isLocal = process.env.LOCAL_RUN === 'true';
+
 const client = new Client({
     authStrategy: new LocalAuth({
         dataPath: './.wwebjs_auth'
     }),
     puppeteer: {
-        headless: true,
-        executablePath: executablePath,
-        args: [
+        headless: isLocal ? false : true,
+        executablePath: isLocal ? undefined : executablePath,
+        args: isLocal ? ['--no-sandbox', '--disable-setuid-sandbox'] : [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
@@ -34,7 +37,15 @@ const client = new Client({
             '--no-zygote'
         ]
     },
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    pairWithPhoneNumber: process.env.PHONE_NUMBER ? {
+        phoneNumber: process.env.PHONE_NUMBER.replace('+', '').trim()
+    } : undefined
+});
+
+client.on('pairing_code', (code) => {
+    latestPairingCode = code;
+    console.log(`\n=================================\nCÓDIGO DE VINCULACIÓN WHATSAPP: ${code}\n=================================\n`);
 });
 
 client.on('qr', (qr) => {
@@ -105,8 +116,35 @@ app.post('/send', async (req, res) => {
 });
 
 app.get('/qr', async (req, res) => {
+    if (latestPairingCode) {
+        return res.send(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Vincular WhatsApp - Merma Cero</title>
+                    <style>
+                        body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+                        .container { background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); text-align: center; max-width: 400px; border: 1px solid #334155; }
+                        .code { font-size: 36px; font-weight: 700; color: #38bdf8; background: #0f172a; padding: 20px; border-radius: 12px; margin: 25px 0; letter-spacing: 4px; border: 1px dashed #38bdf8; font-family: monospace; }
+                        h2 { margin: 0 0 10px 0; font-size: 22px; font-weight: 600; color: #38bdf8; }
+                        p { margin: 0; font-size: 14px; color: #94a3b8; line-height: 1.5; }
+                        .footer { margin-top: 20px; font-size: 11px; color: #64748b; font-style: italic; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h2>Vincular con Código</h2>
+                        <p>Abre WhatsApp en tu celular (Chip 5575049383), ve a Dispositivos Vinculados, selecciona <strong>"Vincular con número de teléfono"</strong> (al final de tu pantalla) e ingresa este código:</p>
+                        <div class="code">${latestPairingCode}</div>
+                        <p class="footer">Esta página se actualizará o cerrará una vez que se conecte el bot.</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    }
+
     if (!latestQR) {
-        return res.send('Esperando código QR de WhatsApp... Por favor recarga esta página en 10 segundos.');
+        return res.send('Esperando código de vinculación o QR de WhatsApp... Por favor recarga esta página en 10 segundos.');
     }
     try {
         const qrImage = await QRCode.toDataURL(latestQR);
@@ -140,6 +178,10 @@ app.get('/qr', async (req, res) => {
 
 app.get('/qr/status', (req, res) => {
     res.json({ ready: client.info ? true : false });
+});
+
+app.get('/pairing-code', (req, res) => {
+    res.json({ code: latestPairingCode || null });
 });
 
 app.get('/', (req, res) => {
