@@ -11,8 +11,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-
-
     <style>
         /* Modern Minimalist Design (B&W) */
         :root {
@@ -449,47 +447,6 @@
         .whatsapp-cta:hover {
             background: #27272a;
         }
-
-        /* Map Styles */
-        #map {
-            width: 100%;
-            height: 500px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        /* Customize Leaflet styles to match our clean B&W theme */
-        .leaflet-container {
-            font-family: inherit;
-            background: #f4f4f5 !important;
-        }
-        .leaflet-bar {
-            border: 1px solid var(--border-dark) !important;
-            box-shadow: none !important;
-            border-radius: 4px !important;
-            overflow: hidden;
-        }
-        .leaflet-bar a {
-            background-color: #fff !important;
-            color: var(--text) !important;
-            border-bottom: 1px solid var(--border-color) !important;
-            transition: background-color 0.2s;
-        }
-        .leaflet-bar a:hover {
-            background-color: #f4f4f5 !important;
-        }
-        .leaflet-popup-content-wrapper {
-            background: #ffffff !important;
-            color: var(--text) !important;
-            border-radius: 4px !important;
-            border: 1px solid var(--border-dark) !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-        }
-        .leaflet-popup-tip {
-            background: #ffffff !important;
-            border: 1px solid var(--border-dark) !important;
-        }
     </style>
 </head>
 <body>
@@ -618,23 +575,6 @@
             </div>
         </section>
 
-        <!-- Map Section Link -->
-        <section id="map-section" style="margin-bottom: 4rem;">
-            <h2 class="section-title">📍 Red de Resiliencia Climática</h2>
-            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">
-                Nuestros algoritmos actúan en tiempo real protegiendo el flujo de caja del comercio popular mexicano. Para salvaguardar la privacidad y optimizar el rendimiento, trasladamos el mapa interactivo y el panel de estadísticas en tiempo real a su propio portal independiente.
-            </p>
-            <div style="border: 1px solid var(--text); padding: 2rem; border-radius: 4px; display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; background-color: var(--surface);">
-                <h3 style="font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em;">Panel de Monitoreo y Mapa en Vivo</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.5rem;">
-                    Visualiza la distribución de comerciantes registrados de forma directa, estadísticas agregadas en tiempo real de mermas evitadas, tipos de negocio por categoría y ciudades destacadas en toda la República Mexicana.
-                </p>
-                <a href="/mapa" class="btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; background-color: var(--text); color: var(--bg-color); font-weight: 700; border-radius: 4px; transition: background-color 0.2s ease;">
-                    Ver Red y Estadísticas en Vivo →
-                </a>
-            </div>
-        </section>
-
         <!-- Scientific / Math Section -->
         <section id="math" class="math-section">
             <h2 class="section-title">Marco Científico</h2>
@@ -673,49 +613,15 @@
     </div>
 
     <script>
+        // Constantes Físicas
         const R_GAS = 8.314;
-        let INVENTORY_PARAMETERS = {
+        const INVENTORY_PARAMETERS = {
             seafood: { Ea: 65000.0, K0: 2.5e10, alpha: 1.2, price: 120.0, cost: 70.0, salvage: 10.0 },
             flowers: { Ea: 55000.0, K0: 8.0e8, alpha: -0.4, price: 50.0, cost: 20.0, salvage: 5.0 },
             fruit_vegetables: { Ea: 48000.0, K0: 4.5e7, alpha: 0.8, price: 40.0, cost: 18.0, salvage: 4.0 },
             dairy: { Ea: 72000.0, K0: 5.0e11, alpha: 0.5, price: 35.0, cost: 22.0, salvage: 2.0 },
             generic: { Ea: 50000.0, K0: 1.0e8, alpha: 0.5, price: 50.0, cost: 25.0, salvage: 5.0 }
         };
-
-        // Cargar las 1000 categorías desde la API
-        fetch('/api/categories')
-            .then(res => res.json())
-            .then(data => {
-                if (data && Object.keys(data).length > 0) {
-                    INVENTORY_PARAMETERS = data;
-                    const select = document.getElementById('category');
-                    select.innerHTML = '';
-                    const sortedKeys = Object.keys(INVENTORY_PARAMETERS).sort((a, b) => {
-                        const nameA = INVENTORY_PARAMETERS[a].name_es.toLowerCase();
-                        const nameB = INVENTORY_PARAMETERS[b].name_es.toLowerCase();
-                        return nameA.localeCompare(nameB);
-                    });
-                    const seenNames = new Set();
-                    sortedKeys.forEach(key => {
-                        const name = INVENTORY_PARAMETERS[key].name_es;
-                        if (!seenNames.has(name)) {
-                            seenNames.add(name);
-                            const opt = document.createElement('option');
-                            opt.value = key;
-                            opt.textContent = name;
-                            select.appendChild(opt);
-                        }
-                    });
-                    if (INVENTORY_PARAMETERS['pescaderia_del_barrio']) {
-                        select.value = 'pescaderia_del_barrio';
-                    } else if (INVENTORY_PARAMETERS['seafood']) {
-                        select.value = 'seafood';
-                    }
-                    runSimulation();
-                }
-            })
-            .catch(err => console.error("Error al cargar categorías:", err));
-
 
         // Generador Mulberry32
         function mulberry32(a) {
