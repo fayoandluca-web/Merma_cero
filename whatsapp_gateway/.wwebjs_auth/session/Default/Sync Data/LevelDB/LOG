@@ -1,0 +1,4 @@
+2026/08/13-05:40:07.534 41bc Creating DB C:\Users\arqis\AppData\Local\agy\bin\merma_cero\whatsapp_gateway\.wwebjs_auth\session\Default\Sync Data\LevelDB since it was missing.
+2026/08/13-05:40:07.861 41bc Reusing MANIFEST C:\Users\arqis\AppData\Local\agy\bin\merma_cero\whatsapp_gateway\.wwebjs_auth\session\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/08/13-05:40:07.862 41bc Recovering log #3
+2026/08/13-05:40:07.863 41bc Reusing old log C:\Users\arqis\AppData\Local\agy\bin\merma_cero\whatsapp_gateway\.wwebjs_auth\session\Default\Sync Data\LevelDB/000003.log 
