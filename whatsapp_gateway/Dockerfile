@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     ca-certificates \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Descargar e instalar la clave y repositorio oficial de Google Chrome
