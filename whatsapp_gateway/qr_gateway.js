@@ -28,13 +28,17 @@ const client = new Client({
     puppeteer: {
         headless: isLocal ? false : true,
         executablePath: isLocal ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : executablePath,
+        protocolTimeout: 300000,
         args: isLocal ? ['--no-sandbox', '--disable-setuid-sandbox'] : [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-gpu',
             '--no-first-run',
-            '--no-zygote'
+            '--no-zygote',
+            '--single-process',
+            '--disable-accelerated-2d-canvas',
+            '--disable-extensions'
         ]
     },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
