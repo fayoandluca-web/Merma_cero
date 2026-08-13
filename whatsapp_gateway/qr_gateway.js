@@ -103,7 +103,7 @@ app.get('/qr', async (req, res) => {
                     <div class="container">
                         <h2>Vincular Merma Cero</h2>
                         <p>Abre WhatsApp en tu celular (Chip 5575049383), ve a Dispositivos Vinculados y escanea esta imagen:</p>
-                        <img src="\${qrImage}" />
+                        <img src="${qrImage}" />
                         <p class="footer">Esta página se actualizará o cerrará una vez que se conecte el bot.</p>
                     </div>
                 </body>
