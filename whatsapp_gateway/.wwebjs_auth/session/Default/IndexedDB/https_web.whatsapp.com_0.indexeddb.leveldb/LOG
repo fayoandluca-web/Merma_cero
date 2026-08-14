@@ -1,0 +1,52 @@
+2026/08/13-23:21:45.668 1c70 Creating DB C:\Users\arqis\AppData\Local\agy\bin\merma_cero\whatsapp_gateway\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb since it was missing.
+2026/08/13-23:21:45.686 1c70 Reusing MANIFEST C:\Users\arqis\AppData\Local\agy\bin\merma_cero\whatsapp_gateway\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/08/13-23:23:33.461 1c70 Level-0 table #5: started
+2026/08/13-23:23:33.527 1c70 Level-0 table #5: 1055722 bytes OK
+2026/08/13-23:23:33.532 1c70 Delete type=0 #3
+2026/08/13-23:23:38.059 1c70 Level-0 table #7: started
+2026/08/13-23:23:38.128 1c70 Level-0 table #7: 1397087 bytes OK
+2026/08/13-23:23:38.130 1c70 Delete type=0 #4
+2026/08/13-23:23:38.138 1c70 Compacting 1@1 + 1@2 files
+2026/08/13-23:23:38.259 1c70 Generated table #8@1: 19846 keys, 1543940 bytes
+2026/08/13-23:23:38.260 1c70 Compacted 1@1 + 1@2 files => 1543940 bytes
+2026/08/13-23:23:38.263 1c70 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/08/13-23:23:41.013 a88 Level-0 table #10: started
+2026/08/13-23:23:41.072 a88 Level-0 table #10: 973277 bytes OK
+2026/08/13-23:23:41.076 a88 Delete type=2 #5
+2026/08/13-23:23:41.076 a88 Delete type=0 #6
+2026/08/13-23:23:41.076 a88 Delete type=2 #7
+2026/08/13-23:23:41.082 a88 Compacting 1@1 + 1@2 files
+2026/08/13-23:23:41.207 a88 Generated table #11@1: 26527 keys, 1904475 bytes
+2026/08/13-23:23:41.207 a88 Compacted 1@1 + 1@2 files => 1904475 bytes
+2026/08/13-23:23:41.210 a88 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/08/13-23:23:41.211 a88 Delete type=2 #10
+2026/08/13-23:23:46.299 1c70 Level-0 table #13: started
+2026/08/13-23:23:46.365 1c70 Level-0 table #13: 1080458 bytes OK
+2026/08/13-23:23:46.368 1c70 Delete type=2 #8
+2026/08/13-23:23:46.368 1c70 Delete type=0 #9
+2026/08/13-23:23:46.691 1c70 Compacting 1@1 + 1@2 files
+2026/08/13-23:23:46.877 1c70 Generated table #14@1: 36926 keys, 2204423 bytes
+2026/08/13-23:23:47.809 1c70 Generated table #15@1: 2837 keys, 123092 bytes
+2026/08/13-23:23:47.809 1c70 Compacted 1@1 + 1@2 files => 2327515 bytes
+2026/08/13-23:23:47.811 1c70 compacted to: files[ 0 0 2 0 0 0 0 ]
+2026/08/13-23:23:55.220 6e0 Level-0 table #17: started
+2026/08/13-23:23:55.317 6e0 Level-0 table #17: 1311482 bytes OK
+2026/08/13-23:23:55.319 6e0 Delete type=2 #11
+2026/08/13-23:23:55.319 6e0 Delete type=0 #12
+2026/08/13-23:23:55.320 6e0 Delete type=2 #13
+2026/08/13-23:23:55.331 6e0 Compacting 1@1 + 2@2 files
+2026/08/13-23:23:55.474 6e0 Generated table #18@1: 44504 keys, 2209358 bytes
+2026/08/13-23:23:55.565 6e0 Generated table #19@1: 30018 keys, 1218049 bytes
+2026/08/13-23:23:55.565 6e0 Compacted 1@1 + 2@2 files => 3427407 bytes
+2026/08/13-23:23:55.567 6e0 compacted to: files[ 0 0 2 0 0 0 0 ]
+2026/08/13-23:24:02.883 1c70 Level-0 table #21: started
+2026/08/13-23:24:02.970 1c70 Level-0 table #21: 1095261 bytes OK
+2026/08/13-23:24:02.972 1c70 Delete type=2 #14
+2026/08/13-23:24:02.972 1c70 Delete type=2 #15
+2026/08/13-23:24:02.973 1c70 Delete type=0 #16
+2026/08/13-23:24:02.973 1c70 Delete type=2 #17
+2026/08/13-23:24:02.979 3c80 Compacting 1@1 + 2@2 files
+2026/08/13-23:24:03.174 3c80 Generated table #22@1: 35683 keys, 2201644 bytes
+2026/08/13-23:24:03.283 3c80 Generated table #23@1: 40829 keys, 1550691 bytes
+2026/08/13-23:24:03.284 3c80 Compacted 1@1 + 2@2 files => 3752335 bytes
+2026/08/13-23:24:03.285 3c80 compacted to: files[ 0 0 2 0 0 0 0 ]
