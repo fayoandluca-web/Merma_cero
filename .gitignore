@@ -14,3 +14,7 @@ env/
 *.db
 *.json
 !requirements.txt
+
+# WhatsApp Gateway session storage
+whatsapp_gateway/.wwebjs_auth/
+whatsapp_gateway/.wwebjs_cache/

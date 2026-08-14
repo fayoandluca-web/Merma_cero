@@ -21,9 +21,8 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 
-# Copiar el script de la pasarela y la sesión de confianza
+# Copiar el script de la pasarela
 COPY qr_gateway.js ./
-COPY .wwebjs_auth/ ./.wwebjs_auth/
 
 # Omitir descarga interna de Chromium en Puppeteer y usar el Chrome instalado en el sistema
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
