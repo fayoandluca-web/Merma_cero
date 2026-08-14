@@ -7,6 +7,30 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 
+// Captura de Logs para diagnóstico remoto en contenedores
+const containerLogs = [];
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.log = function(...args) {
+    containerLogs.push(`[LOG] ${new Date().toISOString()} - ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`);
+    if (containerLogs.length > 500) containerLogs.shift();
+    originalLog.apply(console, args);
+};
+
+console.error = function(...args) {
+    containerLogs.push(`[ERROR] ${new Date().toISOString()} - ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`);
+    if (containerLogs.length > 500) containerLogs.shift();
+    originalError.apply(console, args);
+};
+
+console.warn = function(...args) {
+    containerLogs.push(`[WARN] ${new Date().toISOString()} - ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`);
+    if (containerLogs.length > 500) containerLogs.shift();
+    originalWarn.apply(console, args);
+};
+
 // Eliminar archivos de bloqueo (LOCK/SingletonLock) que impiden a Chrome arrancar en la nube
 function cleanLockFiles(dir) {
     if (!fs.existsSync(dir)) return;
@@ -264,6 +288,10 @@ app.get('/qr/debug', async (req, res) => {
 
 app.get('/pairing-code', (req, res) => {
     res.json({ code: latestPairingCode || null });
+});
+
+app.get('/qr/logs', (req, res) => {
+    res.type('text/plain').send(containerLogs.join('\n'));
 });
 
 app.get('/', (req, res) => {
