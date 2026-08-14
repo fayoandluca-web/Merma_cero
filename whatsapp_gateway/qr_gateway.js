@@ -3,7 +3,35 @@ const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const axios = require('axios');
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const app = express();
+
+// Eliminar archivos de bloqueo (LOCK/SingletonLock) que impiden a Chrome arrancar en la nube
+function cleanLockFiles(dir) {
+    if (!fs.existsSync(dir)) return;
+    try {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+            const fullPath = path.join(dir, file);
+            const stat = fs.lstatSync(fullPath);
+            if (stat.isDirectory()) {
+                cleanLockFiles(fullPath);
+            } else if (file === 'LOCK' || file === 'SingletonLock') {
+                try {
+                    fs.unlinkSync(fullPath);
+                    console.log(`Lock file deleted: ${fullPath}`);
+                } catch (err) {
+                    console.error(`Failed to delete lock file ${fullPath}: ${err.message}`);
+                }
+            }
+        }
+    } catch (e) {
+        console.error(`Error scanning directory ${dir}:`, e.message);
+    }
+}
+
+cleanLockFiles('./.wwebjs_auth');
 
 let latestQR = '';
 let latestPairingCode = '';
