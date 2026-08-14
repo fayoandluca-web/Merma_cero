@@ -122,6 +122,10 @@ const client = new Client({
             '--no-sandbox', 
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
+            '--disable-renderer-backgrounding',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-ipc-flooding-protection',
             '--disable-blink-features=AutomationControlled'
         ]
     },
