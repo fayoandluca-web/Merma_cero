@@ -32,11 +32,12 @@ console.warn = function(...args) {
 };
 
 process.on('uncaughtException', (err) => {
-    console.error('UNCAUGHT EXCEPTION:', err.message, err.stack);
+    console.error(`UNCAUGHT EXCEPTION: ${err.message}\nStack: ${err.stack}`);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('UNHANDLED REJECTION at:', promise, 'reason:', reason);
+    const errorMsg = reason instanceof Error ? `${reason.message}\nStack: ${reason.stack}` : (typeof reason === 'object' ? JSON.stringify(reason) : String(reason));
+    console.error('UNHANDLED REJECTION reason:', errorMsg);
 });
 
 // Podar quirúrgicamente el perfil de Chrome para dejar solo Cookies, Local Storage e IndexedDB, reduciendo drásticamente el consumo de RAM
