@@ -31,6 +31,14 @@ console.warn = function(...args) {
     originalWarn.apply(console, args);
 };
 
+process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT EXCEPTION:', err.message, err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('UNHANDLED REJECTION at:', promise, 'reason:', reason);
+});
+
 // Podar quirúrgicamente el perfil de Chrome para dejar solo Cookies, Local Storage e IndexedDB, reduciendo drásticamente el consumo de RAM
 function pruneProfile(dir) {
     if (!fs.existsSync(dir)) return;
