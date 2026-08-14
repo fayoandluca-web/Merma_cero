@@ -1,4 +1,0 @@
-2026/08/13-05:40:08.128 3714 Creating DB C:\Users\arqis\AppData\Local\agy\bin\merma_cero\whatsapp_gateway\.wwebjs_auth\session\Default\shared_proto_db since it was missing.
-2026/08/13-05:40:08.148 3714 Reusing MANIFEST C:\Users\arqis\AppData\Local\agy\bin\merma_cero\whatsapp_gateway\.wwebjs_auth\session\Default\shared_proto_db/MANIFEST-000001
-2026/08/13-05:40:08.150 3714 Recovering log #3
-2026/08/13-05:40:08.154 3714 Reusing old log C:\Users\arqis\AppData\Local\agy\bin\merma_cero\whatsapp_gateway\.wwebjs_auth\session\Default\shared_proto_db/000003.log 
