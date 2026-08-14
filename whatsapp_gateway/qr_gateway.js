@@ -193,6 +193,21 @@ app.get('/qr/status', (req, res) => {
     res.json({ ready: client.info ? true : false });
 });
 
+app.get('/qr/debug', async (req, res) => {
+    try {
+        const state = await client.getState().catch(e => 'error: ' + e.message);
+        res.json({
+            ready: client.info ? true : false,
+            state: state,
+            info: client.info || null,
+            latestPairingCode: latestPairingCode || null,
+            latestQR: latestQR ? 'present' : 'none'
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/pairing-code', (req, res) => {
     res.json({ code: latestPairingCode || null });
 });
