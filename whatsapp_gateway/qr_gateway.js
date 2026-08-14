@@ -31,31 +31,45 @@ console.warn = function(...args) {
     originalWarn.apply(console, args);
 };
 
-// Eliminar archivos de bloqueo (LOCK/SingletonLock) que impiden a Chrome arrancar en la nube
-function cleanLockFiles(dir) {
+// Podar quirúrgicamente el perfil de Chrome para dejar solo Cookies, Local Storage e IndexedDB, reduciendo drásticamente el consumo de RAM
+function pruneProfile(dir) {
     if (!fs.existsSync(dir)) return;
     try {
         const files = fs.readdirSync(dir);
         for (const file of files) {
             const fullPath = path.join(dir, file);
             const stat = fs.lstatSync(fullPath);
+            
             if (stat.isDirectory()) {
-                cleanLockFiles(fullPath);
-            } else if (file === 'LOCK' || file === 'SingletonLock') {
-                try {
-                    fs.unlinkSync(fullPath);
-                    console.log(`Lock file deleted: ${fullPath}`);
-                } catch (err) {
-                    console.error(`Failed to delete lock file ${fullPath}: ${err.message}`);
+                // Conservar solo las carpetas esenciales para mantener la autenticación
+                if (file === 'Local Storage' || file === 'IndexedDB' || file === 'Network' || file === 'session' || file === 'Default') {
+                    pruneProfile(fullPath);
+                } else {
+                    try {
+                        fs.rmSync(fullPath, { recursive: true, force: true });
+                        console.log(`Pruned directory: ${fullPath}`);
+                    } catch (err) {
+                        console.error(`Failed to prune directory ${fullPath}: ${err.message}`);
+                    }
+                }
+            } else {
+                // Eliminar archivos de bloqueo u otros innecesarios
+                if (file === 'LOCK' || file === 'SingletonLock' || file === 'SingletonSocket' || file === 'SingletonCookie') {
+                    try {
+                        fs.unlinkSync(fullPath);
+                        console.log(`Pruned file: ${fullPath}`);
+                    } catch (err) {
+                        console.error(`Failed to delete file ${fullPath}: ${err.message}`);
+                    }
                 }
             }
         }
     } catch (e) {
-        console.error(`Error scanning directory ${dir}:`, e.message);
+        console.error(`Error pruning profile in ${dir}:`, e.message);
     }
 }
 
-cleanLockFiles('./.wwebjs_auth');
+pruneProfile('./.wwebjs_auth');
 
 let latestQR = '';
 let latestPairingCode = '';
