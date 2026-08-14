@@ -44,6 +44,15 @@ const WEBHOOK_URL = process.env.WEBHOOK_URL || 'https://merma-cero-backend-produ
 
 // Mapa en memoria para recordar los identificadores originales (ej. @lid o @c.us)
 const userFromCache = new Map();
+const MAX_CACHE_SIZE = 5000;
+
+function cacheUser(phone, from) {
+    if (userFromCache.size >= MAX_CACHE_SIZE) {
+        const firstKey = userFromCache.keys().next().value;
+        userFromCache.delete(firstKey);
+    }
+    userFromCache.set(phone, from);
+}
 
 const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 'C:\\Users\\arqis\\.cache\\puppeteer\\chrome\\win64-146.0.7680.31\\chrome-win64\\chrome.exe';
 
@@ -95,11 +104,14 @@ client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
 });
 
+let heartbeatInterval = null;
+
 client.on('ready', () => {
     console.log('¡Cliente de WhatsApp listo y conectado!');
     
     // Iniciar latido de monitoreo para asegurar que la sesión no se congele
-    setInterval(async () => {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(async () => {
         try {
             const state = await client.getState();
             console.log(`[Latido Monitoreo] Estado de conexión activo: ${state}`);
@@ -109,17 +121,27 @@ client.on('ready', () => {
     }, 30000);
 });
 
+client.on('disconnected', (reason) => {
+    console.warn(`[WhatsApp] Cliente desconectado: ${reason}`);
+    latestQR = '';
+    latestPairingCode = '';
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
+});
+
 client.on('message_create', async (msg) => {
     try {
         if (!msg || !msg.from) return;
         if (msg.fromMe) return; // Omitir mensajes enviados por el bot mismo
-        if (msg.from.includes('@g.us')) return; // Omitir grupos
+        if (msg.from.includes('@g.us') || msg.from.includes('@broadcast') || msg.from.includes('@newsletter')) return; // Omitir grupos, estados y canales
 
         console.log(`Mensaje detectado de ${msg.from}: ${msg.body}`);
         
         const senderNumber = msg.from.split('@')[0];
         const cleanPhone = '+' + senderNumber;
-        userFromCache.set(cleanPhone, msg.from);
+        cacheUser(cleanPhone, msg.from);
 
         const profileName = (msg._data && msg._data.notifyName) ? msg._data.notifyName : 'Comerciante';
 
@@ -131,7 +153,8 @@ client.on('message_create', async (msg) => {
 
         console.log(`Enviando mensaje al webhook de FastAPI (${WEBHOOK_URL})...`);
         const res = await axios.post(WEBHOOK_URL, params, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            timeout: 15000
         });
         console.log(`Webhook respondio exitosamente:`, res.status);
     } catch (err) {
@@ -141,8 +164,11 @@ client.on('message_create', async (msg) => {
 
 app.post('/send', async (req, res) => {
     const { to, body } = req.body;
+    if (!to || !body) {
+        return res.status(400).json({ status: 'error', error: 'Parámetros obligatorios faltantes: to, body' });
+    }
     try {
-        const cleanTo = to.replace('whatsapp:', '').trim();
+        const cleanTo = String(to).replace('whatsapp:', '').trim();
         // Intentar recuperar el identificador original de la caché
         const cachedId = userFromCache.get(cleanTo);
         const formattedTo = cachedId || (cleanTo.replace('+', '') + '@c.us');

@@ -52,7 +52,16 @@ class SQLiteVendorRepository(VendorRepositoryPort):
             db_dir = os.path.dirname(db_path)
             if db_dir:
                 os.makedirs(db_dir, exist_ok=True)
+            from sqlalchemy import event
             self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False}, poolclass=SingletonThreadPool)
+            
+            @event.listens_for(self.engine, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.execute("PRAGMA busy_timeout=5000")
+                cursor.close()
 
         Base.metadata.create_all(self.engine)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
