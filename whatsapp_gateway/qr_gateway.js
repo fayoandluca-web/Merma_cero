@@ -41,8 +41,13 @@ function pruneProfile(dir) {
             const stat = fs.lstatSync(fullPath);
             
             if (stat.isDirectory()) {
-                // Conservar solo las carpetas esenciales para mantener la autenticación
-                if (file === 'Local Storage' || file === 'IndexedDB' || file === 'Network' || file === 'session' || file === 'Default') {
+                // Conservar solo las carpetas esenciales y sus subcarpetas para mantener la autenticación
+                const isKeepDir = fullPath.includes('Local Storage') || 
+                                  fullPath.includes('IndexedDB') || 
+                                  fullPath.includes('Network') ||
+                                  file === 'session' || 
+                                  file === 'Default';
+                if (isKeepDir) {
                     pruneProfile(fullPath);
                 } else {
                     try {
