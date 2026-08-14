@@ -114,10 +114,6 @@ const client = new Client({
     authStrategy: new LocalAuth({
         dataPath: './.wwebjs_auth'
     }),
-    webVersionCache: {
-        type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wwebjs/web-files/master/html/2.2412.54.html'
-    },
     puppeteer: {
         headless: isLocal ? false : 'new',
         executablePath: isLocal ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : executablePath,
