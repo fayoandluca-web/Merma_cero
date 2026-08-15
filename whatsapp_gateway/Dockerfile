@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
     ca-certificates \
     git \
+    tini \
     && rm -rf /var/lib/apt/lists/*
 
 # Descargar e instalar la clave y repositorio oficial de Google Chrome
@@ -30,4 +31,5 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 EXPOSE 3000
 
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["npm", "start"]

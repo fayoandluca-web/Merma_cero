@@ -122,6 +122,8 @@ const client = new Client({
             '--no-sandbox', 
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-zygote',
             '--disable-renderer-backgrounding',
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
@@ -151,31 +153,14 @@ client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
 });
 
-let heartbeatInterval = null;
-
 client.on('ready', () => {
     console.log('¡Cliente de WhatsApp listo y conectado!');
-    
-    // Iniciar latido de monitoreo para asegurar que la sesión no se congele
-    if (heartbeatInterval) clearInterval(heartbeatInterval);
-    heartbeatInterval = setInterval(async () => {
-        try {
-            const state = await client.getState();
-            console.log(`[Latido Monitoreo] Estado de conexión activo: ${state}`);
-        } catch (err) {
-            console.log(`[Latido Monitoreo] Alerta - Navegador no responde: ${err.message}`);
-        }
-    }, 30000);
 });
 
 client.on('disconnected', (reason) => {
     console.warn(`[WhatsApp] Cliente desconectado: ${reason}`);
     latestQR = '';
     latestPairingCode = '';
-    if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-        heartbeatInterval = null;
-    }
 });
 
 client.on('message_create', async (msg) => {
