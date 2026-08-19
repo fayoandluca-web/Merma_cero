@@ -119,7 +119,6 @@ const client = new Client({
             '--disable-dev-shm-usage',
             '--disable-gpu',
             '--no-zygote',
-            '--single-process',
             '--js-flags="--max-old-space-size=256"',
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
