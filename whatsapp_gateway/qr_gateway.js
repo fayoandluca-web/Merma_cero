@@ -50,25 +50,20 @@ function pruneProfile(dir) {
             const stat = fs.lstatSync(fullPath);
             
             if (stat.isDirectory()) {
-                // Conservar solo las carpetas esenciales y sus subcarpetas para mantener la autenticación
-                const isKeepDir = fullPath.includes('Local Storage') || 
-                                  fullPath.includes('IndexedDB') || 
-                                  fullPath.includes('Network') ||
-                                  file === 'session' || 
-                                  file === 'Default';
-                if (isKeepDir) {
-                    pruneProfile(fullPath);
-                } else {
+                // Eliminar solo carpetas de caché pesadas e innecesarias
+                if (file === 'Cache' || file === 'Code Cache' || file === 'GPUCache') {
                     try {
                         fs.rmSync(fullPath, { recursive: true, force: true });
                         console.log(`Pruned directory: ${fullPath}`);
                     } catch (err) {
                         console.error(`Failed to prune directory ${fullPath}: ${err.message}`);
                     }
+                } else {
+                    pruneProfile(fullPath);
                 }
             } else {
-                // Eliminar archivos de bloqueo u otros innecesarios
-                if (file === 'LOCK' || file === 'SingletonLock' || file === 'SingletonSocket' || file === 'SingletonCookie') {
+                // Eliminar archivos de bloqueo
+                if (file === 'LOCK' || file === 'SingletonLock' || file === 'SingletonSocket') {
                     try {
                         fs.unlinkSync(fullPath);
                         console.log(`Pruned file: ${fullPath}`);
@@ -157,10 +152,35 @@ client.on('ready', () => {
     console.log('¡Cliente de WhatsApp listo y conectado!');
 });
 
-client.on('disconnected', (reason) => {
-    console.warn(`[WhatsApp] Cliente desconectado: ${reason}`);
+client.on('disconnected', async (reason) => {
+    console.warn(`[WhatsApp] Cliente desconectado. Razón: ${reason}`);
     latestQR = '';
     latestPairingCode = '';
+
+    if (reason === 'LOGOUT') {
+        console.log('[WhatsApp] Limpiando datos de sesión locales debido a LOGOUT...');
+        try {
+            if (fs.existsSync('./.wwebjs_auth')) {
+                fs.rmSync('./.wwebjs_auth', { recursive: true, force: true });
+                console.log('[WhatsApp] Datos de sesión eliminados con éxito.');
+            }
+        } catch (err) {
+            console.error(`[WhatsApp] Error al eliminar datos de sesión: ${err.message}`);
+        }
+    }
+
+    try {
+        console.log('[WhatsApp] Destruyendo cliente anterior...');
+        await client.destroy();
+        console.log('[WhatsApp] Cliente destruido con éxito.');
+    } catch (err) {
+        console.error(`[WhatsApp] Error al destruir el cliente: ${err.message}`);
+    }
+
+    console.log('[WhatsApp] Re-inicializando cliente en 5 segundos...');
+    setTimeout(() => {
+        client.initialize();
+    }, 5000);
 });
 
 client.on('message_create', async (msg) => {
