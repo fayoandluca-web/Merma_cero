@@ -221,6 +221,7 @@ app.get('/qr', async (req, res) => {
             <html>
                 <head>
                     <title>Vincular WhatsApp - Merma Cero</title>
+                    <meta http-equiv="refresh" content="15">
                     <style>
                         body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
                         .container { background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); text-align: center; max-width: 400px; border: 1px solid #334155; }
@@ -243,7 +244,27 @@ app.get('/qr', async (req, res) => {
     }
 
     if (!latestQR) {
-        return res.send('Esperando código de vinculación o QR de WhatsApp... Por favor recarga esta página en 10 segundos.');
+        return res.send(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Vincular WhatsApp - Merma Cero</title>
+                    <meta http-equiv="refresh" content="5">
+                    <style>
+                        body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+                        .container { background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); text-align: center; max-width: 400px; border: 1px solid #334155; }
+                        h2 { margin: 0 0 10px 0; font-size: 20px; font-weight: 600; color: #e2e8f0; }
+                        p { margin: 0; font-size: 14px; color: #94a3b8; line-height: 1.5; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h2>Inicializando canal seguro...</h2>
+                        <p>Generando código de vinculación o QR de WhatsApp. Por favor espera, esta página se recargará automáticamente en unos segundos.</p>
+                    </div>
+                </body>
+            </html>
+        `);
     }
     try {
         const qrImage = await QRCode.toDataURL(latestQR);
@@ -251,6 +272,7 @@ app.get('/qr', async (req, res) => {
             <html>
                 <head>
                     <title>Vincular WhatsApp - Merma Cero</title>
+                    <meta http-equiv="refresh" content="15">
                     <style>
                         body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
                         .container { background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); text-align: center; max-width: 400px; }
