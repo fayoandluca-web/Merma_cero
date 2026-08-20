@@ -262,6 +262,7 @@ app.get('/qr', async (req, res) => {
                         <h2>Vincular con Código</h2>
                         <p>Abre WhatsApp en tu celular (Chip 5575049383), ve a Dispositivos Vinculados, selecciona <strong>"Vincular con número de teléfono"</strong> (al final de tu pantalla) e ingresa este código:</p>
                         <div class="code">${latestPairingCode}</div>
+                        <p style="margin: 20px 0;"><a href="/qr/restart" style="color: #ef4444; text-decoration: none; font-size: 13px; font-weight: 600; border: 1px solid #ef4444; padding: 8px 16px; border-radius: 8px; display: inline-block;">⚠️ ¿No funciona? Generar Nuevo Código</a></p>
                         <p class="footer">Esta página se actualizará o cerrará una vez que se conecte el bot.</p>
                     </div>
                 </body>
@@ -321,6 +322,54 @@ app.get('/qr', async (req, res) => {
     } catch (err) {
         res.status(500).send('Error al generar código QR: ' + err.message);
     }
+});
+
+app.get('/qr/restart', async (req, res) => {
+    console.log('[API] Solicitud de reinicio manual recibida...');
+    latestQR = '';
+    latestPairingCode = '';
+    
+    try {
+        if (fs.existsSync('./.wwebjs_auth')) {
+            fs.rmSync('./.wwebjs_auth', { recursive: true, force: true });
+            console.log('[API] Datos de sesión eliminados.');
+        }
+    } catch (err) {
+        console.error(`[API] Error al eliminar datos de sesión: ${err.message}`);
+    }
+
+    try {
+        console.log('[API] Destruyendo cliente anterior...');
+        await client.destroy();
+        console.log('[API] Cliente destruido con éxito.');
+    } catch (err) {
+        console.error(`[API] Error al destruir el cliente: ${err.message}`);
+    }
+
+    console.log('[API] Re-inicializando cliente...');
+    client.initialize();
+
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>Reiniciando Bot - Merma Cero</title>
+                <meta http-equiv="refresh" content="5;url=/qr">
+                <style>
+                    body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+                    .container { background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); text-align: center; max-width: 400px; border: 1px solid #dc2626; }
+                    h2 { margin: 0 0 10px 0; font-size: 20px; font-weight: 600; color: #f87171; }
+                    p { margin: 0; font-size: 14px; color: #94a3b8; line-height: 1.5; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>Reiniciando sistema de vinculación...</h2>
+                    <p>Limpiando sesiones y arrancando un nuevo navegador Chromium. Serás redirigido en 5 segundos...</p>
+                </div>
+            </body>
+        </html>
+    `);
 });
 
 app.get('/qr/status', (req, res) => {
